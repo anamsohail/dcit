@@ -15,7 +15,7 @@ public class Node {
 			OwnIp=InetAddress.getByName(ip);
 			sendsocket=new DatagramSocket();
 			OwnPort=port;
-		}catch(Exception e){System.out.println("Exception");}
+		}catch(Exception e){e.printStackTrace();}
 	}
 
 	public void join(InetAddress Ip,int port, int myPort){
@@ -26,7 +26,7 @@ public class Node {
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, Ip, port);
 			sendsocket.send(packet);
 			System.out.println("sent message: "+send);
-		}catch(Exception e ){System.out.println("exception");}	
+		}catch(Exception e ){e.printStackTrace();}	
 	}
 	
 	public void start() {
@@ -60,7 +60,7 @@ public class Node {
 			String port=String.valueOf(OwnPort);
 			String message="My IP is "+IP+" my port is "+port;
 			System.out.println(message);
-		}catch(Exception e){System.out.println("exception");}
+		}catch(Exception e){e.printStackTrace();}
 	}	
 	
 	public boolean checkInList(String ip, String port) {
