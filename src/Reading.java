@@ -28,7 +28,7 @@ public class Reading implements Runnable {
 					}
 
 				} else if (s.equals("start")) {
-					// TODO: Start distributed read and write
+					Global.node.start();
 				}
 			}
 		}

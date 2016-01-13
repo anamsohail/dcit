@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,6 +27,15 @@ public class Node {
 			sendsocket.send(packet);
 			System.out.println("sent message: "+send);
 		}catch(Exception e ){System.out.println("exception");}	
+	}
+	
+	public void start() {
+		byte[] buffer = "start".getBytes();
+		try {
+			this.sendsocket.send(new DatagramPacket(buffer, buffer.length));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void addNodeToList(InetAddress ip, int port) {
