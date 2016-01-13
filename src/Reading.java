@@ -11,11 +11,11 @@ public class Reading implements Runnable {
 			while(true){
 				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 				String s = bufferRead.readLine();
-				StringTokenizer st=new StringTokenizer(s, " ,");
+				StringTokenizer st=new StringTokenizer(s, " ");
 				s=st.nextToken();
 				if(s.equals("join")){
 					if (st.countTokens() != 3) {
-						System.out.println("Usage: join ,<IP address> ,<port> ,<my port>");
+						System.out.println("Usage: join <IP address> <port> <my port>");
 						continue;
 					}
 					String nIP = st.nextToken();
