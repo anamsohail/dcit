@@ -57,7 +57,13 @@ public class Incomming implements Runnable {
 				}
 
 			}
-		}catch(Exception e){System.out.println("exception");}			
+		} catch(Exception e){
+			if (e.getMessage() == "Address already in use: Cannot bind") {
+				// Do nothing.
+			} else {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public void sendToAll(String ip, String port) {
