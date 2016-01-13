@@ -9,6 +9,7 @@ public class Node {
 	public int OwnPort; 
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
+	private boolean isJoined = false;
 
 	public void create(String ip,int port){
 		try{
@@ -25,6 +26,7 @@ public class Node {
 			byte[] buffer=send.getBytes();
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, Ip, port);
 			sendsocket.send(packet);
+			this.isJoined = true;
 			System.out.println("sent message: "+send);
 		}catch(Exception e ){e.printStackTrace();}	
 	}
@@ -33,6 +35,11 @@ public class Node {
 	 * Send "start" command to all connected nodes.
 	 */
 	public void start() {
+		if (!this.isJoined) {
+			System.out.println("You must join a network before you can start.");
+			return;
+		}
+		
 		byte[] buffer = "start".getBytes();
 		for (Node node : nodes) {
 			try {
