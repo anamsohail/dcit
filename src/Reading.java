@@ -27,6 +27,8 @@ public class Reading implements Runnable {
 						System.out.println("Node already in network!");
 					}
 
+				} else if (s.equals("start")) {
+					// TODO: Start distributed read and write
 				}
 			}
 		}

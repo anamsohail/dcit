@@ -45,6 +45,10 @@ public class Incomming implements Runnable {
 						Global.node.addNodeToList(InetAddress.getByName(IP), Integer.parseInt(PORT));
 					} catch (NumberFormatException | UnknownHostException e) {e.printStackTrace();}
 				}
+				
+				if(function.equals("start")) {
+					// TODO: Start distributed read and write
+				}
 
 			}
 		}catch(Exception e){System.out.println("exception");}			
