@@ -2,7 +2,10 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 //how to join: join,ip,port,myport
 public class Node {
 	public InetAddress OwnIp;
@@ -91,12 +94,20 @@ public class Node {
 	//MAIN
 	public static void main(String[] argv){
 		Global.node=new Node();
-		Global.node.create("172.16.1.100",73);
-		Incomming p=new Incomming();		
-		new Thread(p).start();
-		Reading q = new Reading();
-		new Thread(q).start();
-		Global.node.Display();	
+		try {
+			// Get local IP address from format: <hostname>/<IP address>
+			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
+			if (matcher.find()) {
+				Global.node.create(matcher.group(1),73);
+				Incomming p=new Incomming();
+				new Thread(p).start();
+				Reading q = new Reading();
+				new Thread(q).start();
+				Global.node.Display();
+			}
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}	
 	}
 }
 
