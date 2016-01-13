@@ -14,9 +14,19 @@ public class Reading implements Runnable {
 				StringTokenizer st=new StringTokenizer(s, " ,");
 				s=st.nextToken();
 				if(s.equals("join")){
-					InetAddress IP = InetAddress.getByName(new String(st.nextToken()));
+					String nIP = st.nextToken();
+					InetAddress IP = InetAddress.getByName(nIP);
+					nIP = nIP.replaceAll("[/]","");
 					int port = Integer.parseInt(new String(st.nextToken()));
-					Global.node.join(IP, port);
+					int myPort = Integer.parseInt(new String(st.nextToken()));
+					Global.node.join(IP, port, myPort);
+					if(!Global.node.checkInList(nIP, String.valueOf(port))) {
+						Global.node.addNodeToList(IP, port);
+					}
+					else {
+						System.out.println("Node already in network!");
+					}
+
 				}
 			}
 		}
