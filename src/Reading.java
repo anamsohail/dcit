@@ -36,7 +36,9 @@ public class Reading implements Runnable {
 				}
 			}
 		}
-		catch(Exception e){System.out.println("exception");}
+		catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 }
 
