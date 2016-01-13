@@ -14,6 +14,10 @@ public class Reading implements Runnable {
 				StringTokenizer st=new StringTokenizer(s, " ,");
 				s=st.nextToken();
 				if(s.equals("join")){
+					if (st.countTokens() != 3) {
+						System.out.println("Usage: join ,<IP address> ,<port> ,<my port>");
+						continue;
+					}
 					String nIP = st.nextToken();
 					InetAddress IP = InetAddress.getByName(nIP);
 					nIP = nIP.replaceAll("[/]","");
