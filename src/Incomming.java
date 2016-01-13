@@ -41,7 +41,6 @@ public class Incomming implements Runnable {
 					String PORT=token.nextToken();
 					System.out.println("new node: "+IP+","+PORT);
 					System.out.println("adding new node to List");
-					//addNodeToList(IP,PORT);
 					try {
 						Global.node.addNodeToList(InetAddress.getByName(IP), Integer.parseInt(PORT));
 					} catch (NumberFormatException | UnknownHostException e) {e.printStackTrace();}
@@ -50,6 +49,7 @@ public class Incomming implements Runnable {
 			}
 		}catch(Exception e){System.out.println("exception");}			
 	}
+	
 	public void sendToAll(String ip, String port) {
 		ip = ip.replaceAll("[/]","");
 		if(Global.node.nodes.size()>0) {
@@ -72,20 +72,8 @@ public class Incomming implements Runnable {
 		try {
 			Global.node.addNodeToList(InetAddress.getByName(ip), Integer.parseInt(port));
 		} catch (NumberFormatException | UnknownHostException e) {e.printStackTrace();}
-		//addNodeToList(ip,port);
 	}
-/*	public void addNodeToList(String ip, String port) {
-		//add new node to the list
-		Node newNode = new Node();
-		ip = ip.replaceAll("[/]","");
-		try {
-			newNode.OwnIp = InetAddress.getByName(ip);
-		} catch (UnknownHostException e) {e.printStackTrace();}
-		newNode.OwnPort = Integer.parseInt(port);
-		Global.node.nodes.add(newNode);
-		System.out.println("new node added. printing list...");
-		Global.node.printList();
-	}*/
+	
 	public void sendListToNewNode(String ip, String port) {
 		InetAddress IP;
 		try {
@@ -109,17 +97,4 @@ public class Incomming implements Runnable {
 			}
 		} catch (UnknownHostException e1) {e1.printStackTrace();}
 	}
-	
-/*	public boolean checkInList(String ip, String port) {
-			if(Global.node.nodes.size()>0) {
-				System.out.println("checking if node already exists...");
-				for (int i = 0; i < Global.node.nodes.size(); i++) {//send nodes one by one to new node
-					String oldIP = Global.node.nodes.get(i).OwnIp.toString();
-					oldIP = oldIP.replaceAll("[/]","");
-					String oldPort = String.valueOf(Global.node.nodes.get(i).OwnPort);
-					if(oldIP.equals(ip) & oldPort.equals(port)) return true;
-				}
-			}
-			return false;
-	}*/
 }
