@@ -16,7 +16,9 @@ public class Reading implements Runnable {
 				if(s.equals("join")){
 					InetAddress IP = InetAddress.getByName(new String(st.nextToken()));
 					int port = Integer.parseInt(new String(st.nextToken()));
-					Global.node.join(IP, port);
+					int myPort = Integer.parseInt(new String(st.nextToken()));
+					Global.node.join(IP, port, myPort);
+					Global.node.addNodeToList(IP, port);
 				}
 			}
 		}
