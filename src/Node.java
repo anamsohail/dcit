@@ -29,12 +29,17 @@ public class Node {
 		}catch(Exception e ){e.printStackTrace();}	
 	}
 	
+	/**
+	 * Send "start" command to all connected nodes.
+	 */
 	public void start() {
 		byte[] buffer = "start".getBytes();
-		try {
-			this.sendsocket.send(new DatagramPacket(buffer, buffer.length));
-		} catch (IOException e) {
-			e.printStackTrace();
+		for (Node node : nodes) {
+			try {
+				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
