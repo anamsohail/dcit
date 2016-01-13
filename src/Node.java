@@ -13,6 +13,8 @@ public class Node {
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	private boolean isJoined = false;
+	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
+	private String masterString = "";
 
 	public void create(String ip,int port){
 		try{
@@ -50,6 +52,29 @@ public class Node {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	/**
+	 * Temporary solution for getting the master string.
+	 * @return
+	 */
+	public String getMasterNodeString() {
+		if (this.masterNode == this) {
+			return this.masterString;
+		} else {
+			return this.masterNode.getMasterNodeString();
+		}
+	}
+	
+	/**
+	 * Temporary solution for updating the master string.
+	 */
+	public void updateMasterNodeString(String value) {
+		if (this.masterNode == this) {
+			this.masterString = value;
+		} else {
+			this.masterNode.updateMasterNodeString(value);
 		}
 	}
 

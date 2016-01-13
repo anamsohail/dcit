@@ -53,6 +53,7 @@ public class Incomming implements Runnable {
 				}
 				
 				if(function.equals("start")) {
+					System.out.println("Starting...");
 					this.runDistributedOperations();
 					break;
 				}
@@ -118,7 +119,7 @@ public class Incomming implements Runnable {
 		String master = "";
 		
 		// TODO: Synchronize the 20 second duration with other nodes.
-		long timeEnd = System.currentTimeMillis() + (20 * 10000);
+		long timeEnd = System.currentTimeMillis() + (20 * 1000);
 		while (System.currentTimeMillis() < timeEnd) {
 			
 			// Sleep for a random amount of time
@@ -126,17 +127,16 @@ public class Incomming implements Runnable {
 			Thread.sleep((long)(seconds * 1000));
 			
 			// TODO: Read string variable from the master node.
-			master = "";
+			master = Global.node.getMasterNodeString();
 			
 			// Append some random English word to the string.
-			master += WORDS[rand.nextInt(WORDS.length)];
+			master += " " + WORDS[rand.nextInt(WORDS.length)];
 			
 			// TODO: Write the updated string to the master node.
-			
+			Global.node.updateMasterNodeString(master);
 		}
 		
 		// TODO: Read the final string from the master node.
-		master = "";
-		System.out.println(master);
+		System.out.println(Global.node.getMasterNodeString());
 	}
 }
