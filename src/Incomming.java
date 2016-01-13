@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -57,12 +58,10 @@ public class Incomming implements Runnable {
 				}
 
 			}
+		} catch (BindException be) {
+			// Do nothing.
 		} catch(Exception e){
-			if (e.getMessage() == "Address already in use: Cannot bind") {
-				// Do nothing.
-			} else {
-				e.printStackTrace();
-			}
+			e.printStackTrace();
 		}
 	}
 	
