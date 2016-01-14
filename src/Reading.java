@@ -11,9 +11,13 @@ public class Reading implements Runnable {
 			while(true){
 				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 				String s = bufferRead.readLine();
-				StringTokenizer st=new StringTokenizer(s, " ,");
+				StringTokenizer st=new StringTokenizer(s, " ");
 				s=st.nextToken();
 				if(s.equals("join")){
+					if (st.countTokens() != 3) {
+						System.out.println("Usage: join <IP address> <port> <my port>");
+						continue;
+					}
 					String nIP = st.nextToken();
 					InetAddress IP = InetAddress.getByName(nIP);
 					nIP = nIP.replaceAll("[/]","");
@@ -27,10 +31,14 @@ public class Reading implements Runnable {
 						System.out.println("Node already in network!");
 					}
 
+				} else if (s.equals("start")) {
+					Global.node.start();
 				}
 			}
 		}
-		catch(Exception e){System.out.println("exception");}
+		catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 }
 

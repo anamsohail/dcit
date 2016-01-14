@@ -1,20 +1,27 @@
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 //how to join: join,ip,port,myport
 public class Node {
 	public InetAddress OwnIp;
 	public int OwnPort; 
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
+	private boolean isJoined = false;
+	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
+	private String wordString = "";
 
 	public void create(String ip,int port){
 		try{
 			OwnIp=InetAddress.getByName(ip);
 			sendsocket=new DatagramSocket();
 			OwnPort=port;
-		}catch(Exception e){System.out.println("Exception");}
+		}catch(Exception e){e.printStackTrace();}
 	}
 
 	public void join(InetAddress Ip,int port, int myPort){
@@ -24,8 +31,86 @@ public class Node {
 			byte[] buffer=send.getBytes();
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, Ip, port);
 			sendsocket.send(packet);
+			this.isJoined = true;
 			System.out.println("sent message: "+send);
-		}catch(Exception e ){System.out.println("exception");}	
+		}catch(Exception e ){e.printStackTrace();}	
+	}
+	
+	/**
+	 * Send "start" command to all connected nodes.
+	 */
+	public void start() {
+		if (!this.isJoined) {
+			System.out.println("You must join a network before you can start.");
+			return;
+		}
+		
+		byte[] buffer = "start".getBytes();
+		for (Node node : nodes) {
+			try {
+				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * Gets the master node's word string.
+	 * 
+	 * @return the master node's word string.
+	 */
+	public String getMasterString() {
+			byte[] buffer = String.format("str_request,%s,%s", this.getIpString(), this.OwnPort).getBytes();
+			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
+			
+			try {
+				this.sendsocket.send(packet);
+				
+				// Wait for updated value (see Node::unlockWordString).
+				synchronized(this.wordString) {
+					this.wordString.wait();
+				}
+				
+				return this.wordString;
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			return null;
+	}
+	
+	public void sendWordStringToMaster(String value){
+		this.sendWordString(value, this.masterNode);
+	}
+	
+	/**
+	 * Send this node's word string to the specified address.
+	 * 
+	 * @param ip
+	 * @param port
+	 */
+	public void sendWordString(String ip, int port) {
+		Node node = this.findNode(ip, port);
+		if (node != null) {
+			this.sendWordString(this.wordString, node);
+		} else {
+			Exception e = new Exception("Node not found: " + ip + ":" + port);
+			e.printStackTrace();
+		}
+	}
+	
+	public String getWordString() {
+		return this.wordString;
+	}
+	
+	public void unlockWordString(String value) {
+		synchronized(this.wordString) {
+			this.wordString.notify();
+			this.wordString = value;
+		}
 	}
 
 	public void addNodeToList(InetAddress ip, int port) {
@@ -50,7 +135,7 @@ public class Node {
 			String port=String.valueOf(OwnPort);
 			String message="My IP is "+IP+" my port is "+port;
 			System.out.println(message);
-		}catch(Exception e){System.out.println("exception");}
+		}catch(Exception e){e.printStackTrace();}
 	}	
 	
 	public boolean checkInList(String ip, String port) {
@@ -65,16 +150,75 @@ public class Node {
 		}
 		return false;
 }
+	
+	/**
+	 * Find the locally stored node from an IP address and port.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @return The node if found, otherwise null.
+	 */
+	public Node findNode(String ip, int port) {
+		for (Node node: this.nodes) {
+			if (node.getIpString().equals(ip) && node.OwnPort == port) {
+				// Node found.
+				return node;
+			}
+		}
+		
+		// Check if requested node is this instance.
+		if (this.getIpString().equals(ip) && port == this.OwnPort) {
+			return this;
+		}
+		
+		System.out.println(this.getIpString());
+		// Node not found.
+		return null;
+	}
+	
+	/**
+	 * Extract the IP address from the format [hostname]/[IP address]
+	 */
+	public String getIpString() {
+		Matcher matcher = Pattern.compile(".*/(.*)").matcher(this.OwnIp.toString());
+		if (matcher.find()) {
+			return matcher.group(1);
+		} else {
+			return this.OwnIp.toString();
+		}
+	}
+	
+	/**
+	 * Send a word string to the provided node.
+	 */
+	private void sendWordString(String value, Node destination) {
+		
+		byte[] buffer = String.format("str_update,%s", value).getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, destination.OwnIp, destination.OwnPort);
+		
+		try {
+			this.sendsocket.send(packet);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	//MAIN
 	public static void main(String[] argv){
 		Global.node=new Node();
-		Global.node.create("172.16.1.100",71);
-		Incomming p=new Incomming();		
-		new Thread(p).start();
-		Reading q = new Reading();
-		new Thread(q).start();
-		Global.node.Display();	
+		try {
+			// Get local IP address from format: <hostname>/<IP address>
+			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
+			if (matcher.find()) {
+				Global.node.create(matcher.group(1),73);
+				Incomming p=new Incomming();
+				new Thread(p).start();
+				Reading q = new Reading();
+				new Thread(q).start();
+				Global.node.Display();
+			}
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}	
 	}
 }
-

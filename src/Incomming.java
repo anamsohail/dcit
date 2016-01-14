@@ -1,17 +1,21 @@
 import java.io.IOException;
+import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Random;
 import java.util.StringTokenizer;
 
 public class Incomming implements Runnable {
+	
 	@Override
 	public void run() {
 		try{
 			DatagramSocket receivingsocket=new DatagramSocket(Global.node.OwnPort);
+			Thread distributiveReadWrite = new Thread(new DistributedReadWrite(Global.node));
 			while(true){
-				byte[] b=new byte [50];
+				byte[] b=new byte [250];
 				DatagramPacket packet= new DatagramPacket(b,b.length);
 				receivingsocket.receive(packet);
 				byte[] buffer = packet.getData();
@@ -45,9 +49,29 @@ public class Incomming implements Runnable {
 						Global.node.addNodeToList(InetAddress.getByName(IP), Integer.parseInt(PORT));
 					} catch (NumberFormatException | UnknownHostException e) {e.printStackTrace();}
 				}
+				
+				if(function.equals("start")) {
+					System.out.println("Starting...");
+					distributiveReadWrite.start();
+				}
+				
+				if (function.equals("str_request")) {
+					String ip = token.nextToken();
+					String port = token.nextToken();
+					Global.node.sendWordString(ip, Integer.valueOf(port));
+				}
+				
+				if (function.equals("str_update")) {
+					String wordString = token.hasMoreTokens() ? token.nextToken() : "";
+					Global.node.unlockWordString(wordString);
+				}
 
 			}
-		}catch(Exception e){System.out.println("exception");}			
+		} catch (BindException be) {
+			// Do nothing.
+		} catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	public void sendToAll(String ip, String port) {
