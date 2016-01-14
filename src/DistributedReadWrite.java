@@ -34,12 +34,14 @@ public class DistributedReadWrite implements Runnable{
 			// Sleep for a random amount of time
 			try {
 				int seconds = rand.nextInt(WAIT_MAX - WAIT_MIN) + WAIT_MIN;
+				System.out.println("Sleeping for " + seconds + " seconds...");
 				Thread.sleep((long)(seconds * 1000));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			
 			wordString = this.node.getMasterString();
+			System.out.println("old string: " + wordString);
 			
 			// Append some random English word to the string.
 			if (wordString.length() == 0) {
@@ -49,8 +51,10 @@ public class DistributedReadWrite implements Runnable{
 			}
 
 			this.node.sendWordStringToMaster(wordString);
+			System.out.println("new string: " + wordString);
 		}
 		
-		System.out.println(this.node.getMasterString());
+		System.out.println("-------------------");
+		System.out.println("final string: " + this.node.getMasterString());
 	}
 }
