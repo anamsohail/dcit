@@ -8,14 +8,12 @@ import java.util.Random;
 import java.util.StringTokenizer;
 
 public class Incomming implements Runnable {
-	private static int WAIT_MIN = 1;
-	private static int WAIT_MAX = 5;
-	private static String WORDS[] = {"apple", "banana", "carrot", "date", "eggplant", "fig", "guava"};
 	
 	@Override
 	public void run() {
 		try{
 			DatagramSocket receivingsocket=new DatagramSocket(Global.node.OwnPort);
+			Thread distributiveReadWrite = new Thread(new DistributedReadWrite(Global.node));
 			while(true){
 				byte[] b=new byte [50];
 				DatagramPacket packet= new DatagramPacket(b,b.length);
@@ -54,8 +52,18 @@ public class Incomming implements Runnable {
 				
 				if(function.equals("start")) {
 					System.out.println("Starting...");
-					this.runDistributedOperations();
-					break;
+					distributiveReadWrite.start();
+				}
+				
+				if (function.equals("str_request")) {
+					String ip = token.nextToken();
+					String port = token.nextToken();
+					Global.node.sendWordString(ip, Integer.valueOf(port));
+				}
+				
+				if (function.equals("str_update")) {
+					String wordString = token.hasMoreTokens() ? token.nextToken() : "";
+					Global.node.unlockWordString(wordString);
 				}
 
 			}
@@ -112,31 +120,5 @@ public class Incomming implements Runnable {
 				}
 			}
 		} catch (UnknownHostException e1) {e1.printStackTrace();}
-	}
-	
-	private void runDistributedOperations() throws InterruptedException {
-		Random rand = new Random();
-		String master = "";
-		
-		// TODO: Synchronize the 20 second duration with other nodes.
-		long timeEnd = System.currentTimeMillis() + (20 * 1000);
-		while (System.currentTimeMillis() < timeEnd) {
-			
-			// Sleep for a random amount of time
-			int seconds = rand.nextInt(WAIT_MAX - WAIT_MIN) + WAIT_MIN;
-			Thread.sleep((long)(seconds * 1000));
-			
-			// TODO: Read string variable from the master node.
-			master = Global.node.getMasterNodeString();
-			
-			// Append some random English word to the string.
-			master += " " + WORDS[rand.nextInt(WORDS.length)];
-			
-			// TODO: Write the updated string to the master node.
-			Global.node.updateMasterNodeString(master);
-		}
-		
-		// TODO: Read the final string from the master node.
-		System.out.println(Global.node.getMasterNodeString());
 	}
 }

@@ -14,7 +14,7 @@ public class Node {
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
-	private String masterString = "";
+	private String wordString = "";
 
 	public void create(String ip,int port){
 		try{
@@ -56,25 +56,60 @@ public class Node {
 	}
 	
 	/**
-	 * Temporary solution for getting the master string.
-	 * @return
+	 * Gets the master node's word string.
+	 * 
+	 * @return the master node's word string.
 	 */
-	public String getMasterNodeString() {
-		if (this.masterNode == this) {
-			return this.masterString;
-		} else {
-			return this.masterNode.getMasterNodeString();
-		}
+	public String getMasterString() {
+			byte[] buffer = String.format("str_request,%s,%s", this.getIpString(), this.OwnPort).getBytes();
+			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
+			
+			try {
+				this.sendsocket.send(packet);
+				
+				// Wait for updated value (see Node::unlockWordString).
+				synchronized(this.wordString) {
+					this.wordString.wait();
+				}
+				
+				return this.wordString;
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			return null;
+	}
+	
+	public void sendWordStringToMaster(String value){
+		this.sendWordString(value, this.masterNode);
 	}
 	
 	/**
-	 * Temporary solution for updating the master string.
+	 * Send this node's word string to the specified address.
+	 * 
+	 * @param ip
+	 * @param port
 	 */
-	public void updateMasterNodeString(String value) {
-		if (this.masterNode == this) {
-			this.masterString = value;
+	public void sendWordString(String ip, int port) {
+		Node node = this.findNode(ip, port);
+		if (node != null) {
+			this.sendWordString(this.wordString, node);
 		} else {
-			this.masterNode.updateMasterNodeString(value);
+			Exception e = new Exception("Node not found: " + ip + ":" + port);
+			e.printStackTrace();
+		}
+	}
+	
+	public String getWordString() {
+		return this.wordString;
+	}
+	
+	public void unlockWordString(String value) {
+		synchronized(this.wordString) {
+			this.wordString.notify();
+			this.wordString = value;
 		}
 	}
 
@@ -115,6 +150,58 @@ public class Node {
 		}
 		return false;
 }
+	
+	/**
+	 * Find the locally stored node from an IP address and port.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @return The node if found, otherwise null.
+	 */
+	public Node findNode(String ip, int port) {
+		for (Node node: this.nodes) {
+			if (node.getIpString().equals(ip) && node.OwnPort == port) {
+				// Node found.
+				return node;
+			}
+		}
+		
+		// Check if requested node is this instance.
+		if (this.getIpString().equals(ip) && port == this.OwnPort) {
+			return this;
+		}
+		
+		System.out.println(this.getIpString());
+		// Node not found.
+		return null;
+	}
+	
+	/**
+	 * Extract the IP address from the format [hostname]/[IP address]
+	 */
+	public String getIpString() {
+		Matcher matcher = Pattern.compile(".*/(.*)").matcher(this.OwnIp.toString());
+		if (matcher.find()) {
+			return matcher.group(1);
+		} else {
+			return this.OwnIp.toString();
+		}
+	}
+	
+	/**
+	 * Send a word string to the provided node.
+	 */
+	private void sendWordString(String value, Node destination) {
+		
+		byte[] buffer = String.format("str_update,%s", value).getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, destination.OwnIp, destination.OwnPort);
+		
+		try {
+			this.sendsocket.send(packet);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	//MAIN
 	public static void main(String[] argv){
