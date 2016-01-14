@@ -15,7 +15,7 @@ public class Incomming implements Runnable {
 			DatagramSocket receivingsocket=new DatagramSocket(Global.node.OwnPort);
 			Thread distributiveReadWrite = new Thread(new DistributedReadWrite(Global.node));
 			while(true){
-				byte[] b=new byte [50];
+				byte[] b=new byte [250];
 				DatagramPacket packet= new DatagramPacket(b,b.length);
 				receivingsocket.receive(packet);
 				byte[] buffer = packet.getData();
