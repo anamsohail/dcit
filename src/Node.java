@@ -69,7 +69,7 @@ public class Node {
 	//MAIN
 	public static void main(String[] argv){
 		Global.node=new Node();
-		Global.node.create("172.16.1.100",73);
+		Global.node.create("172.16.1.100",71);
 		Incomming p=new Incomming();		
 		new Thread(p).start();
 		Reading q = new Reading();
