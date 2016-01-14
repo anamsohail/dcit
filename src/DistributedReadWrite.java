@@ -42,10 +42,10 @@ public class DistributedReadWrite implements Runnable{
 			wordString = this.node.getMasterString();
 			
 			// Append some random English word to the string.
-			if (wordString.contains(" ")) {
-				wordString += " " + WORDS[rand.nextInt(WORDS.length)];
-			} else {
+			if (wordString.length() == 0) {
 				wordString += WORDS[rand.nextInt(WORDS.length)];
+			} else {
+				wordString += " " + WORDS[rand.nextInt(WORDS.length)];
 			}
 
 			this.node.sendWordStringToMaster(wordString);
