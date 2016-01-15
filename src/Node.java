@@ -262,15 +262,14 @@ public class Node {
 	}
 
 	//MAIN
-	//Usage: join <IP address> <port> <my port>
+	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
 		Global.node=new Node();
 		try {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node.create(matcher.group(1),70);
-				Global.node.ID=4826;
+				Global.node.create(matcher.group(1),71);
 				Incomming p=new Incomming();
 				new Thread(p).start();
 				Reading q = new Reading();
