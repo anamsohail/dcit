@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-//how to join: join,ip,port,myport
+//Usage: join <IP address> <port> <my port>
 public class Node {
 	public InetAddress OwnIp;
 	public int OwnPort; 
@@ -204,6 +204,7 @@ public class Node {
 	}
 
 	//MAIN
+	//Usage: join <IP address> <port> <my port>
 	public static void main(String[] argv){
 		Global.node=new Node();
 		try {
