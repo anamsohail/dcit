@@ -17,6 +17,25 @@ public class Node {
 	private String wordString = "";
 	public int ID;
 	public boolean responded = false;
+	private Algorithm algorithm;
+	
+	private enum Algorithm { CENTRALIZED_MUTUAL_EXCLUSION, RICART_AGRAWALA }
+	
+	/**
+	 * Initializes a new instance of the Node class.
+	 */
+	public Node() {
+		// Do nothing.
+	}
+	
+	/**
+	 * Initializes a new instance of the Node class.
+	 * 
+	 * @param algorithm The algorithm used in the distributed process.
+	 */
+	public Node(Algorithm algorithm) {
+		this.algorithm = algorithm;
+	}
 
 	public void create(String ip,int port){
 		try{
@@ -342,7 +361,20 @@ public class Node {
 	//MAIN
 	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
-		Global.node=new Node();
+		if (argv.length != 1) {
+			System.out.println("Usage: Node.java <algorithm (CME or RA)>");
+			return;
+		}
+		
+		if (argv[0].toUpperCase().equals("CME")) {
+			Global.node=new Node(Node.Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
+		} else if (argv[0].toUpperCase().equals("RA")) {
+			Global.node=new Node(Node.Algorithm.RICART_AGRAWALA);
+		} else {
+			System.out.println("Usage: Node.java <algorithm (CME or RA)>");
+			return;
+		}
+		
 		try {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
