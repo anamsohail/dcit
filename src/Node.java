@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-//Usage: join <IP address> <port> <my port>
+
 public class Node {
 	public InetAddress OwnIp;
 	public int OwnPort; 
@@ -15,12 +15,14 @@ public class Node {
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
+	public int ID;
 
 	public void create(String ip,int port){
 		try{
-			OwnIp=InetAddress.getByName(ip);
-			sendsocket=new DatagramSocket();
-			OwnPort=port;
+			OwnIp = InetAddress.getByName(ip);
+			sendsocket = new DatagramSocket();
+			OwnPort = port;
+			ID = (int) (Math.random() * (10000 - 0));
 		}catch(Exception e){e.printStackTrace();}
 	}
 
@@ -34,7 +36,7 @@ public class Node {
 	 */
 	public void join(InetAddress Ip,int port, int myPort){
 		try{
-			String IpPort=Ip.getHostAddress()+","+port+","+myPort;
+			String IpPort=Ip.getHostAddress()+","+port+","+myPort+","+this.ID;
 			String send="join,"+IpPort;
 			byte[] buffer=send.getBytes();
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, Ip, port);
@@ -138,11 +140,12 @@ public class Node {
 	 * @param ip
 	 * @param port
 	 */
-	public void addNodeToList(InetAddress ip, int port) {
+	public void addNodeToList(InetAddress ip, int port, int ID) {
 		//add new node to the list
 		Node newNode = new Node();
 		newNode.OwnIp = ip;
 		newNode.OwnPort = port;
+		newNode.ID = ID;
 		nodes.add(newNode);
 		System.out.println("new node added. printing list...");
 		printList();
@@ -153,7 +156,7 @@ public class Node {
 	 */
 	public void printList() {
 		for (int i = 0; i < nodes.size(); i++) {
-			System.out.println(i+" IP: "+nodes.get(i).OwnIp+" Port: "+nodes.get(i).OwnPort);
+			System.out.println(i+1+" IP: "+nodes.get(i).OwnIp+" Port: "+nodes.get(i).OwnPort+" ID: "+nodes.get(i).ID);
 		}
 	}
 
@@ -161,7 +164,7 @@ public class Node {
 		try{
 			String IP=OwnIp.getHostAddress();
 			String port=String.valueOf(OwnPort);
-			String message="My IP is "+IP+" my port is "+port;
+			String message="My IP: "+IP+" Port: "+port+" ID: "+ID;
 			System.out.println(message);
 		}catch(Exception e){e.printStackTrace();}
 	}	
@@ -176,7 +179,7 @@ public class Node {
 	public boolean checkInList(String ip, String port) {
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
-			for (int i = 0; i < nodes.size(); i++) {//send nodes one by one to new node
+			for (int i = 0; i < nodes.size(); i++) {
 				String oldIP = nodes.get(i).OwnIp.toString();
 				oldIP = oldIP.replaceAll("[/]","");
 				String oldPort = String.valueOf(nodes.get(i).OwnPort);
@@ -184,6 +187,26 @@ public class Node {
 			}
 		}
 		return false;
+}
+	
+	public int checkID(int ID) {
+		if(ID==this.ID) {
+			System.out.println("ID is the same as my ID...changing ID...");
+			ID = (int) (Math.random() * (10000 - 0));
+			ID = checkID(ID);
+		}
+		if(nodes.size()>0) {
+			System.out.println("checking if ID is unique...");
+			for (int i = 0; i < nodes.size(); i++) {
+				int oldID = nodes.get(i).ID;
+				if(ID==oldID) {
+					System.out.println("ID isn't unique...changing ID...");
+					ID = (int) (Math.random() * (10000 - 0));
+					ID = checkID(ID);
+				}
+			}
+		}
+		return ID;
 }
 	
 	/**
@@ -246,7 +269,8 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node.create(matcher.group(1),73);
+				Global.node.create(matcher.group(1),70);
+				Global.node.ID=4826;
 				Incomming p=new Incomming();
 				new Thread(p).start();
 				Reading q = new Reading();

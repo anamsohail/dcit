@@ -24,12 +24,6 @@ public class Reading implements Runnable {
 					int port = Integer.parseInt(new String(st.nextToken()));
 					int myPort = Integer.parseInt(new String(st.nextToken()));
 					Global.node.join(IP, port, myPort);
-					if(!Global.node.checkInList(nIP, String.valueOf(port))) {
-						Global.node.addNodeToList(IP, port);
-					}
-					else {
-						System.out.println("Node already in network!");
-					}
 
 				} else if (s.equals("start")) {
 					Global.node.start();
