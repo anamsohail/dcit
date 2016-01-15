@@ -16,6 +16,7 @@ public class Node {
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
 	public int ID;
+	public boolean responded = false;
 
 	public void create(String ip,int port){
 		try{
@@ -45,7 +46,7 @@ public class Node {
 			System.out.println("sent message: "+send);
 		}catch(Exception e ){e.printStackTrace();}	
 	}
-	
+
 	/**
 	 * Send "start" command to all connected nodes.
 	 */
@@ -54,7 +55,7 @@ public class Node {
 			System.out.println("You must join a network before you can start.");
 			return;
 		}
-		
+
 		byte[] buffer = "start".getBytes();
 		for (Node node : nodes) {
 			try {
@@ -64,34 +65,34 @@ public class Node {
 			}
 		}
 	}
-	
+
 	/**
 	 * Gets the master node's word string.
 	 * 
 	 * @return the master node's word string.
 	 */
 	public String getMasterString() {
-			byte[] buffer = String.format("str_request,%s,%s", this.getIpString(), this.OwnPort).getBytes();
-			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
-			
-			try {
-				this.sendsocket.send(packet);
-				
-				// Wait for updated value (see Node::unlockWordString).
-				synchronized(this.wordString) {
-					this.wordString.wait();
-				}
-				
-				return this.wordString;
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		byte[] buffer = String.format("str_request,%s,%s", this.getIpString(), this.OwnPort).getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
+
+		try {
+			this.sendsocket.send(packet);
+
+			// Wait for updated value (see Node::unlockWordString).
+			synchronized(this.wordString) {
+				this.wordString.wait();
 			}
-			
-			return null;
+
+			return this.wordString;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
-	
+
 	/**
 	 * Called by the node that has finished adding a new word
 	 * to the word string.
@@ -101,7 +102,7 @@ public class Node {
 	public void sendWordStringToMaster(String value){
 		this.sendWordString(value, this.masterNode);
 	}
-	
+
 	/**
 	 * Send this node's word string to the specified address.
 	 * 
@@ -117,7 +118,7 @@ public class Node {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Called when a node receives the word string
 	 * from the master node.
@@ -168,7 +169,7 @@ public class Node {
 			System.out.println(message);
 		}catch(Exception e){e.printStackTrace();}
 	}	
-	
+
 	/**
 	 * Checks whether a node contains the given network information.
 	 * 
@@ -187,8 +188,8 @@ public class Node {
 			}
 		}
 		return false;
-}
-	
+	}
+
 	public int checkID(int ID) {
 		if(ID==this.ID) {
 			System.out.println("ID is the same as my ID...changing ID...");
@@ -207,8 +208,8 @@ public class Node {
 			}
 		}
 		return ID;
-}
-	
+	}
+
 	/**
 	 * Find the locally stored node from an IP address and port.
 	 * 
@@ -223,17 +224,17 @@ public class Node {
 				return node;
 			}
 		}
-		
+
 		// Check if requested node is this instance.
 		if (this.getIpString().equals(ip) && port == this.OwnPort) {
 			return this;
 		}
-		
+
 		System.out.println(this.getIpString());
 		// Node not found.
 		return null;
 	}
-	
+
 	/**
 	 * Extract the IP address from the format [hostname]/[IP address]
 	 */
@@ -245,20 +246,97 @@ public class Node {
 			return this.OwnIp.toString();
 		}
 	}
-	
+
 	/**
 	 * Send a word string to the provided node.
 	 */
 	private void sendWordString(String value, Node destination) {
-		
+
 		byte[] buffer = String.format("str_update,%s", value).getBytes();
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, destination.OwnIp, destination.OwnPort);
-		
+
 		try {
 			this.sendsocket.send(packet);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void setMasterNode(Node Winner) {
+		System.out.println("====Master node elected====");
+		Winner.Display();
+		System.out.println("===========================");
+		this.masterNode = Winner;
+	}
+
+	public void election() {
+		if(nodes.size()>0) {//send to higher IDs
+			String myIP = this.OwnIp.toString();
+			myIP = myIP.replaceAll("[/]","");
+			String myPort = String.valueOf(this.OwnPort);
+			String myID = String.valueOf(this.ID);
+			String send="ELECTION,"+myIP+","+myPort+","+myID;
+			byte[] buffer=send.getBytes();
+			boolean higher = true;
+			for (int i = 0; i < nodes.size(); i++) {
+				int oldID = nodes.get(i).ID;
+				if(oldID>this.ID) {
+					higher = false;
+					InetAddress oldIP = nodes.get(i).OwnIp;
+					int oldPort = nodes.get(i).OwnPort;
+					DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+					try {
+						sendsocket.send(packet);
+					} catch (IOException e) {e.printStackTrace();}
+					System.out.println("sent message: "+send);
+				}
+			}
+			if(higher==false) {//not higher...wait for response
+				try {
+					Thread.sleep(5 * 1000);
+					if(this.responded==true) {
+						System.out.println("I lost the election!");
+						this.responded=false;
+					}
+					else {
+						System.out.println("No response. I'm the Winner!");
+						setMasterNode(Global.node);
+						advert();
+					}
+				} catch (InterruptedException e) {e.printStackTrace();}
+			}
+			else{//higher...send message to network declaring yourself winner
+				System.out.println("Highest ID. I'm the Winner!");
+				setMasterNode(Global.node);
+				advert();
+			}
+		}
+		else {
+			System.out.println("No nodes connected. Setting self to master node");
+			setMasterNode(Global.node);
+		}
+	}
+
+	public void advert() {
+		for (int i = 0; i < nodes.size(); i++) {
+			String myIP = this.OwnIp.toString();
+			myIP = myIP.replaceAll("[/]","");
+			String myPort = String.valueOf(this.OwnPort);
+			String myID = String.valueOf(this.ID);
+			String send="MASTER,"+myIP+","+myPort+","+myID;
+			byte[] buffer=send.getBytes();
+			InetAddress oldIP = Global.node.nodes.get(i).OwnIp;
+			int oldPort = Global.node.nodes.get(i).OwnPort;
+			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+			try {
+				Global.node.sendsocket.send(packet);
+			} catch (IOException e) {e.printStackTrace();}
+			System.out.println("sent message: "+send);
+		}
+	}
+	
+	public Node getMasterNode() {
+		return this.masterNode;
 	}
 
 	//MAIN
@@ -269,7 +347,7 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node.create(matcher.group(1),71);
+				Global.node.create(matcher.group(1),72);
 				Incomming p=new Incomming();
 				new Thread(p).start();
 				Reading q = new Reading();

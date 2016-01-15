@@ -49,6 +49,37 @@ public class Incomming implements Runnable {
 					}
 				}
 				
+				if(function.equals("MASTER")) {
+					String masterIp = token.nextToken();
+					String masterPort = token.nextToken();
+					String masterID = token.nextToken();
+					Node master = new Node();
+					master.OwnIp = InetAddress.getByName(masterIp);
+					master.OwnPort = Integer.parseInt(masterPort);
+					master.ID = Integer.parseInt(masterID);
+					Global.node.setMasterNode(master);
+				}
+				
+				if(function.equals("OK")) {
+					String IP=token.nextToken();
+					String PORT=token.nextToken();
+					String senderID = token.nextToken();
+					System.out.println("msg received: OK from "+IP+","+PORT+","+senderID);
+					Global.node.responded = true;
+				}
+				
+				if(function.equals("ELECTION")) {
+					String IP=token.nextToken();
+					String PORT=token.nextToken();
+					String senderID = token.nextToken();
+					System.out.println("msg received: ELECTION from "+IP+","+PORT+","+","+senderID);
+					if(Integer.parseInt(senderID)<Global.node.ID) {
+						sendOK(IP,PORT);
+						System.out.println("My ID is higher so I'll start my own election!");
+						Global.node.election();
+					}
+				}
+				
 				if(function.equals("newID")) {
 					String newID = token.nextToken();
 					int ID = Integer.parseInt(newID);
@@ -154,6 +185,20 @@ public class Incomming implements Runnable {
 				Global.node.sendsocket.send(packet);} 
 			catch (IOException e) {e.printStackTrace();}
 			System.out.println("sent message: "+send);
+			
+			System.out.println("Sending Master Node info to new node...");
+			Node mNode = Global.node.getMasterNode();
+			String mIP = mNode.OwnIp.toString();
+			mIP = mIP.replaceAll("[/]","");
+			String mPort = String.valueOf(mNode.OwnPort);
+			String mID = String.valueOf(mNode.ID);
+			send="MASTER,"+mIP+","+mPort+","+mID;
+			buffer=send.getBytes();
+			packet = new DatagramPacket(buffer, buffer.length, IP, PORT);
+			try {
+				Global.node.sendsocket.send(packet);
+			} catch (IOException e) {e.printStackTrace();}
+			System.out.println("sent message: "+send);
 		} catch (UnknownHostException e1) {e1.printStackTrace();}
 	}
 
@@ -163,6 +208,25 @@ public class Incomming implements Runnable {
 			IP = InetAddress.getByName(ip);
 			int PORT = Integer.parseInt(port);
 			String send="newID,"+String.valueOf(ID);
+			byte[] buffer=send.getBytes();
+			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, IP, PORT);
+			try {
+				Global.node.sendsocket.send(packet);} 
+			catch (IOException e) {e.printStackTrace();}
+			System.out.println("sent message: "+send);
+		} catch (UnknownHostException e1) {e1.printStackTrace();}
+	}
+	
+	public void sendOK(String ip, String port) {
+		InetAddress IP;
+		try {
+			IP = InetAddress.getByName(ip);
+			int PORT = Integer.parseInt(port);
+			String myIP = Global.node.OwnIp.toString();
+			myIP = myIP.replaceAll("[/]","");
+			String myPort = String.valueOf(Global.node.OwnPort);
+			String myID = String.valueOf(Global.node.ID);
+			String send="OK,"+myIP+","+myPort+","+myID;
 			byte[] buffer=send.getBytes();
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, IP, PORT);
 			try {

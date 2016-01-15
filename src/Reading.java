@@ -24,10 +24,13 @@ public class Reading implements Runnable {
 					int port = Integer.parseInt(new String(st.nextToken()));
 					int myPort = Global.node.OwnPort;
 					Global.node.join(IP, port, myPort);
-
-				} else if (s.equals("start")) {
+				} 
+				else if (s.equals("start")) {
 					Global.node.start();
 				}
+				else if (s.equals("ELECTION")) {
+					Global.node.election();
+				}	
 			}
 		}
 		catch(Exception e){
