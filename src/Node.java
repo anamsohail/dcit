@@ -24,6 +24,14 @@ public class Node {
 		}catch(Exception e){e.printStackTrace();}
 	}
 
+	/**
+	 * Joins a network by connecting to a node that
+	 * is already in the network.
+	 * 
+	 * @param Ip
+	 * @param port
+	 * @param myPort
+	 */
 	public void join(InetAddress Ip,int port, int myPort){
 		try{
 			String IpPort=Ip.getHostAddress()+","+port+","+myPort;
@@ -82,6 +90,12 @@ public class Node {
 			return null;
 	}
 	
+	/**
+	 * Called by the node that has finished adding a new word
+	 * to the word string.
+	 * 
+	 * @param value
+	 */
 	public void sendWordStringToMaster(String value){
 		this.sendWordString(value, this.masterNode);
 	}
@@ -102,10 +116,14 @@ public class Node {
 		}
 	}
 	
-	public String getWordString() {
-		return this.wordString;
-	}
-	
+	/**
+	 * Called when a node receives the word string
+	 * from the master node.
+	 * 
+	 * Allows code in Node::getMasterString to proceed.
+	 * 
+	 * @param value
+	 */
 	public void unlockWordString(String value) {
 		synchronized(this.wordString) {
 			this.wordString.notify();
@@ -113,6 +131,13 @@ public class Node {
 		}
 	}
 
+	/**
+	 * Stores a new node's information in a list
+	 * of all nodes in the network.
+	 * 
+	 * @param ip
+	 * @param port
+	 */
 	public void addNodeToList(InetAddress ip, int port) {
 		//add new node to the list
 		Node newNode = new Node();
@@ -123,6 +148,9 @@ public class Node {
 		printList();
 	}
 
+	/**
+	 * Prints a list of all other nodes connected to the network.
+	 */
 	public void printList() {
 		for (int i = 0; i < nodes.size(); i++) {
 			System.out.println(i+" IP: "+nodes.get(i).OwnIp+" Port: "+nodes.get(i).OwnPort);
@@ -138,6 +166,13 @@ public class Node {
 		}catch(Exception e){e.printStackTrace();}
 	}	
 	
+	/**
+	 * Checks whether a node contains the given network information.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @return true if the node is in the network, otherwise false.
+	 */
 	public boolean checkInList(String ip, String port) {
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
