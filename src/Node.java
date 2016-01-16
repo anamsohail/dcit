@@ -358,6 +358,15 @@ public class Node {
 		return this.masterNode;
 	}
 
+	@Override
+	public boolean equals(Object object) {
+		return this.equals((Node)object);
+	}
+	
+	public boolean equals(Node node) {
+		return this.getIpString().equals(node.getIpString()) && this.OwnPort == node.OwnPort;
+	}
+
 	//MAIN
 	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
