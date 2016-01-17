@@ -89,7 +89,9 @@ public class Node {
 			}
 		}
 		
-		this.distribtedReadWrite.start();
+		if (!this.masterNode.equals(this)) {
+			this.distribtedReadWrite.start();
+		}
 	}
 
 	/**
