@@ -19,6 +19,7 @@ public class Node {
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
+	private Thread distribtedReadWrite = new Thread(new DistributedReadWrite(this));
 	
 	private Algorithm algorithm;
 	public int ID;
@@ -87,6 +88,8 @@ public class Node {
 				e.printStackTrace();
 			}
 		}
+		
+		this.distribtedReadWrite.start();
 	}
 
 	/**
