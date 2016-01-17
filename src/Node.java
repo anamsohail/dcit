@@ -197,6 +197,10 @@ public class Node {
 	 * @return true if the node is in the network, otherwise false.
 	 */
 	public boolean checkInList(String ip, String port) {
+		String myIP = OwnIp.toString();
+		myIP = myIP.replaceAll("[/]","");
+		String myPort = String.valueOf(OwnPort);
+		if(myIP.equals(ip) & myPort.equals(port)) return true;
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
 			for (int i = 0; i < nodes.size(); i++) {
