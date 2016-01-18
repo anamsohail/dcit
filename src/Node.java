@@ -8,16 +8,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Node {
-	public InetAddress OwnIp;
-	public int OwnPort; 
+	public boolean responded = false;
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
+
+	public InetAddress OwnIp;
+	public int OwnPort;
+	
+	private static String USAGE = "Usage: Node.java <port> <algorithm (CME or RA)>";
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
-	public int ID;
-	public boolean responded = false;
+	private Thread distribtedReadWrite = new Thread(new DistributedReadWrite(this));
+	
 	private Algorithm algorithm;
+	public int ID;
 	
 	private enum Algorithm { CENTRALIZED_MUTUAL_EXCLUSION, RICART_AGRAWALA }
 	
@@ -82,6 +87,10 @@ public class Node {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+		
+		if (!this.masterNode.equals(this)) {
+			this.distribtedReadWrite.start();
 		}
 	}
 
@@ -362,20 +371,38 @@ public class Node {
 		return this.masterNode;
 	}
 
+	@Override
+	public boolean equals(Object object) {
+		return this.equals((Node)object);
+	}
+	
+	public boolean equals(Node node) {
+		return this.getIpString().equals(node.getIpString()) && this.OwnPort == node.OwnPort;
+	}
+
 	//MAIN
 	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
-		if (argv.length != 1) {
-			System.out.println("Usage: Node.java <algorithm (CME or RA)>");
+		int port;
+		
+		if (argv.length != 2) {
+			System.out.println(USAGE);
 			return;
 		}
 		
-		if (argv[0].toUpperCase().equals("CME")) {
+		try {
+			port = Integer.valueOf(argv[0]);
+		} catch (NumberFormatException ex) {
+			System.out.println(USAGE);
+			return;
+		}
+		
+		if (argv[1].toUpperCase().equals("CME")) {
 			Global.node=new Node(Node.Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
-		} else if (argv[0].toUpperCase().equals("RA")) {
+		} else if (argv[1].toUpperCase().equals("RA")) {
 			Global.node=new Node(Node.Algorithm.RICART_AGRAWALA);
 		} else {
-			System.out.println("Usage: Node.java <algorithm (CME or RA)>");
+			System.out.println(USAGE);
 			return;
 		}
 		
@@ -383,7 +410,7 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node.create(matcher.group(1),73);
+				Global.node.create(matcher.group(1), port);
 				Incomming p=new Incomming();
 				new Thread(p).start();
 				Reading q = new Reading();

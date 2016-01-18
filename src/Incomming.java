@@ -102,7 +102,10 @@ public class Incomming implements Runnable {
 
 				if(function.equals("start")) {
 					System.out.println("Starting...");
-					distributiveReadWrite.start();
+					
+					if (!Global.node.getMasterNode().equals(Global.node)) {
+						distributiveReadWrite.start();
+					}
 				}
 
 				if (function.equals("str_request")) {
