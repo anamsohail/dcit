@@ -383,7 +383,7 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node.create(matcher.group(1),72);
+				Global.node.create(matcher.group(1),73);
 				Incomming p=new Incomming();
 				new Thread(p).start();
 				Reading q = new Reading();
