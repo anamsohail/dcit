@@ -19,7 +19,7 @@ public class Node {
 	public InetAddress OwnIp;
 	public int OwnPort;
 
-	private static String USAGE = "Usage: Node.java <port> <algorithm (CME or RA)>";
+	private static String USAGE = "Usage: Node.java <port>";
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
@@ -28,24 +28,8 @@ public class Node {
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
 
-	private Algorithm algorithm;
+	public Algorithm algorithm;
 	public int ID;
-
-	/**
-	 * Initializes a new instance of the Node class.
-	 */
-	public Node() {
-		// Do nothing.
-	}
-
-	/**
-	 * Initializes a new instance of the Node class.
-	 * 
-	 * @param algorithm The algorithm used in the distributed process.
-	 */
-	public Node(Algorithm algorithm) {
-		this.algorithm = algorithm;
-	}
 
 	public void create(String ip,int port){
 		try{
@@ -79,13 +63,14 @@ public class Node {
 	/**
 	 * Send "start" command to all connected nodes.
 	 */
-	public void start() {
+	public void sendStart(Algorithm algorithm) {
 		if (!this.isJoined) {
 			System.out.println("You must join a network before you can start.");
 			return;
 		}
 
-		byte[] buffer = "start".getBytes();
+		this.algorithm = algorithm;
+		byte[] buffer = ("start," + algorithm.ordinal()).getBytes();
 		for (Node node : nodes) {
 			try {
 				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
@@ -480,7 +465,7 @@ public class Node {
 	public static void main(String[] argv){
 		int port;
 
-		if (argv.length != 2) {
+		if (argv.length != 1) {
 			System.out.println(USAGE);
 			return;
 		}
@@ -492,19 +477,11 @@ public class Node {
 			return;
 		}
 
-		if (argv[1].toUpperCase().equals("CME")) {
-			Global.node=new Node(Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
-		} else if (argv[1].toUpperCase().equals("RA")) {
-			Global.node=new Node(Algorithm.RICART_AGRAWALA);
-		} else {
-			System.out.println(USAGE);
-			return;
-		}
-
 		try {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
+				Global.node = new Node();
 				Global.node.create(matcher.group(1), port);
 				Incomming p=new Incomming();
 				new Thread(p).start();

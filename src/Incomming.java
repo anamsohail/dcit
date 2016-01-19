@@ -101,7 +101,8 @@ public class Incomming implements Runnable {
 				}
 
 				if(function.equals("start")) {
-					System.out.println("Starting...");
+					Global.node.algorithm = Algorithm.values()[Integer.valueOf(token.nextToken())];
+					System.out.println("Starting with algorithm: " + Global.node.algorithm);
 					
 					if (Global.node.getMasterNode().equals(Global.node)) {
 						Global.node.timer.start();

@@ -26,7 +26,19 @@ public class Reading implements Runnable {
 					Global.node.join(IP, port, myPort);
 				} 
 				else if (s.equals("start")) {
-					Global.node.start();
+					if (st.countTokens() != 1) {
+						System.out.println("Usage: start <algorithm (CME or RA)>");
+						continue;
+					}
+					
+					String algorithm = st.nextToken();
+					if (algorithm.toUpperCase().equals("CME")) {
+						Global.node.sendStart(Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
+					} else if (algorithm.toUpperCase().equals("RA")) {
+						Global.node.sendStart(Algorithm.RICART_AGRAWALA);
+					} else {
+						System.out.println("Usage: start <algorithm (CME or RA)>");
+					}
 				}
 				else if (s.equals("ELECTION")) {
 					Global.node.election();
