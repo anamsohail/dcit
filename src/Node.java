@@ -15,21 +15,22 @@ public class Node {
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public Thread timer = new Thread(new Timer());
+	public List<String> appended = new ArrayList<String>();
+	public int nextRequestTime = -1;
 
 	public InetAddress OwnIp;
 	public int OwnPort;
+
+	public Algorithm algorithm;
+	public int ID;
 
 	private static String USAGE = "Usage: Node.java <port>";
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
-	private Thread distribtedReadWrite = new Thread(new DistributedReadWrite(this));
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
-
-	public Algorithm algorithm;
-	public int ID;
 
 	public void create(String ip,int port){
 		try{
@@ -69,7 +70,6 @@ public class Node {
 			return;
 		}
 
-		this.algorithm = algorithm;
 		byte[] buffer = ("start," + algorithm.ordinal()).getBytes();
 		for (Node node : nodes) {
 			try {
@@ -79,13 +79,19 @@ public class Node {
 			}
 		}
 
+		this.start(algorithm);
+	}
+
+	public void start(Algorithm algorithm){
+		System.out.println("Starting with algorithm: " + algorithm);
+		this.algorithm = algorithm;
+		
 		if (this.masterNode.equals(this)) {
 			this.timer.start();
 		} else {
-			this.distribtedReadWrite.start();
+			new TimeAdvanceGrant(this, 0).run();
 		}
 	}
-
 	/**
 	 * Gets the master node's word string.
 	 * 
@@ -514,6 +520,5 @@ public class Node {
 			}
 			
 		}
-
 	}
 }

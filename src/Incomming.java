@@ -7,12 +7,13 @@ import java.net.UnknownHostException;
 import java.util.StringTokenizer;
 
 public class Incomming implements Runnable {
+	private Thread timeAdvanceGrant;
 
 	@Override
 	public void run() {
 		try{
 			DatagramSocket receivingsocket=new DatagramSocket(Global.node.OwnPort);
-			Thread distributiveReadWrite = new Thread(new DistributedReadWrite(Global.node));
+
 			while(true){
 				byte[] b=new byte [250];
 				DatagramPacket packet= new DatagramPacket(b,b.length);
@@ -101,14 +102,7 @@ public class Incomming implements Runnable {
 				}
 
 				if(function.equals("start")) {
-					Global.node.algorithm = Algorithm.values()[Integer.valueOf(token.nextToken())];
-					System.out.println("Starting with algorithm: " + Global.node.algorithm);
-					
-					if (Global.node.getMasterNode().equals(Global.node)) {
-						Global.node.timer.start();
-					} else {
-						distributiveReadWrite.start();
-					}
+					Global.node.start(Algorithm.values()[Integer.valueOf(token.nextToken())]);
 				}
 
 				if (function.equals("str_request")) {
@@ -119,7 +113,8 @@ public class Incomming implements Runnable {
 				
 				if (function.equals("time_advance")) {
 					int time = Integer.valueOf(token.nextToken());
-					System.out.println("Time: " + time);
+					this.timeAdvanceGrant = new Thread(new TimeAdvanceGrant(Global.node, time));
+					this.timeAdvanceGrant.start();
 				}
 				
 				if (function.equals("str_request_final")) {
