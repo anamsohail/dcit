@@ -381,54 +381,9 @@ public class Node {
 		this.masterNode = Winner;
 	}
 
-	public void election() throws InterruptedException {
-		if(nodes.size()>0) {//send to higher IDs
-			String myIP = this.OwnIp.toString();
-			myIP = myIP.replaceAll("[/]","");
-			String myPort = String.valueOf(this.OwnPort);
-			String myID = String.valueOf(this.ID);
-			String send="ELECTION,"+myIP+","+myPort+","+myID;
-			byte[] buffer=send.getBytes();
-			boolean higher = true;
-			for (int i = 0; i < nodes.size(); i++) {
-				int oldID = nodes.get(i).ID;
-				if(oldID>this.ID) {
-					higher = false;
-					InetAddress oldIP = nodes.get(i).OwnIp;
-					int oldPort = nodes.get(i).OwnPort;
-					DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
-					try {
-						sendsocket.send(packet);
-					} catch (IOException e) {e.printStackTrace();}
-					System.out.println("sent message: "+send);
-				}
-			}
-			if(higher==false) {//not higher...wait for response
-				long timeEnd = System.currentTimeMillis() + (20 * 1000);
-				while (System.currentTimeMillis() < timeEnd) {
-					Thread.sleep(5*1000);
-					System.out.println("sleeping...");
-				}
-				if(this.responded==true) {
-					System.out.println("I lost the election!");
-					//this.responded=false;
-				}
-				else {
-					System.out.println("No response. I'm the Winner!");
-					setMasterNode(Global.node);
-					advert();
-				}
-			}
-			else{//higher...send message to network declaring yourself winner
-				System.out.println("Highest ID. I'm the Winner!");
-				setMasterNode(Global.node);
-				advert();
-			}
-		}
-		else {
-			System.out.println("No nodes connected. Setting self to master node");
-			setMasterNode(Global.node);
-		}
+	public void election(){
+		election elect = new election();
+		new Thread(elect).start();
 	}
 
 	public void advert() {
