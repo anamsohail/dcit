@@ -4,6 +4,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +23,9 @@ public class Node {
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
 	private String wordString = "";
 	private Thread distribtedReadWrite = new Thread(new DistributedReadWrite(this));
+	private Queue<Node> requestQueue = new LinkedList<Node>();
+	private List<Node> doneNodes = new ArrayList<Node>();
+	private Node servicedNode = null;
 	
 	private Algorithm algorithm;
 	public int ID;
@@ -140,7 +146,28 @@ public class Node {
 	public void sendWordString(String ip, int port) {
 		Node node = this.findNode(ip, port);
 		if (node != null) {
-			this.sendWordString(this.wordString, node);
+			if (this.masterNode.equals(this)) {
+				System.out.println("Receive request from " + node);
+				this.requestQueue.add(node);
+				this.checkRequestQueue();
+			} else {
+				this.sendWordString(this.wordString, node);
+			}
+		} else {
+			Exception e = new Exception("Node not found: " + ip + ":" + port);
+			e.printStackTrace();
+		}
+	}
+	
+	public void sendFinalString(String ip, int port) {
+		Node node = this.findNode(ip, port);
+		if (node != null) {
+			this.doneNodes.add(node);
+			if (this.doneNodes.size() == this.nodes.size()) {
+				for (Node n: this.nodes) {
+					this.sendWordString(this.wordString, n);
+				}
+			}
 		} else {
 			Exception e = new Exception("Node not found: " + ip + ":" + port);
 			e.printStackTrace();
@@ -160,6 +187,37 @@ public class Node {
 			this.wordString.notify();
 			this.wordString = value;
 		}
+		
+		if (this.masterNode.equals(this)) {
+			System.out.println("Finished servicing " + this.servicedNode);
+			synchronized (this.servicedNode) {
+				this.servicedNode = null;
+			}
+			
+			this.checkRequestQueue();
+		}
+	}
+	
+	public String requestFinalString(){
+		byte[] buffer = String.format("str_request_final,%s,%s", this.getIpString(), this.OwnPort).getBytes();
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
+
+		try {
+			this.sendsocket.send(packet);
+
+			// Wait for updated value (see Node::unlockWordString).
+			synchronized(this.wordString) {
+				this.wordString.wait();
+			}
+
+			return this.wordString;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 
 	/**
@@ -378,6 +436,31 @@ public class Node {
 	
 	public boolean equals(Node node) {
 		return this.getIpString().equals(node.getIpString()) && this.OwnPort == node.OwnPort;
+	}
+	
+	@Override
+	public String toString() {
+		return "[" + this.getIpString() + ":" + this.OwnPort + "]";
+	}
+	
+	private void checkRequestQueue() {
+		// Only the master node should run this code.
+		if (!this.masterNode.equals(this)) {
+			return;
+		}
+		
+		if (this.servicedNode == null) {
+			Node node = this.requestQueue.poll();
+			if (node != null) {
+				System.out.println("Now servicing " + node);
+				this.servicedNode = node;
+				synchronized(this.wordString) {
+					this.sendWordString(this.wordString, node);
+				}
+			}
+		} else {
+			System.out.println("Serviced node is not null: " + this.servicedNode);
+		}
 	}
 
 	//MAIN
