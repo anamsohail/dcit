@@ -31,8 +31,6 @@ public class Node {
 	private Algorithm algorithm;
 	public int ID;
 
-	private enum Algorithm { CENTRALIZED_MUTUAL_EXCLUSION, RICART_AGRAWALA }
-
 	/**
 	 * Initializes a new instance of the Node class.
 	 */
@@ -495,9 +493,9 @@ public class Node {
 		}
 
 		if (argv[1].toUpperCase().equals("CME")) {
-			Global.node=new Node(Node.Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
+			Global.node=new Node(Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
 		} else if (argv[1].toUpperCase().equals("RA")) {
-			Global.node=new Node(Node.Algorithm.RICART_AGRAWALA);
+			Global.node=new Node(Algorithm.RICART_AGRAWALA);
 		} else {
 			System.out.println(USAGE);
 			return;
