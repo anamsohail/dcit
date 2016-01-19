@@ -17,7 +17,7 @@ public class Node {
 
 	public InetAddress OwnIp;
 	public int OwnPort;
-	
+
 	private static String USAGE = "Usage: Node.java <port> <algorithm (CME or RA)>";
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
@@ -26,19 +26,19 @@ public class Node {
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
-	
+
 	private Algorithm algorithm;
 	public int ID;
-	
+
 	private enum Algorithm { CENTRALIZED_MUTUAL_EXCLUSION, RICART_AGRAWALA }
-	
+
 	/**
 	 * Initializes a new instance of the Node class.
 	 */
 	public Node() {
 		// Do nothing.
 	}
-	
+
 	/**
 	 * Initializes a new instance of the Node class.
 	 * 
@@ -94,7 +94,7 @@ public class Node {
 				e.printStackTrace();
 			}
 		}
-		
+
 		if (!this.masterNode.equals(this)) {
 			this.distribtedReadWrite.start();
 		}
@@ -325,6 +325,21 @@ public class Node {
 		return null;
 	}
 
+	public int findNodeIndex(int ID) {
+		if(nodes.isEmpty()) {
+			System.out.println("List is empty");
+			return -1;
+		}
+		for (int i = 0; i < nodes.size(); i++) {
+			if (nodes.get(i).ID == ID) {
+				System.out.println("Node found!");
+				return i;
+			}
+		}
+		System.out.println("Node not in list!");
+		return -1;
+	}
+
 	/**
 	 * Extract the IP address from the format [hostname]/[IP address]
 	 */
@@ -353,13 +368,17 @@ public class Node {
 	}
 
 	public void setMasterNode(Node Winner) {
+		if(Winner==null) {
+			System.out.println("No master node for the time being!");
+			return;
+		}
 		System.out.println("====Master node elected====");
 		Winner.Display();
 		System.out.println("===========================");
 		this.masterNode = Winner;
 	}
 
-	public void election() {
+	public void election() throws InterruptedException {
 		if(nodes.size()>0) {//send to higher IDs
 			String myIP = this.OwnIp.toString();
 			myIP = myIP.replaceAll("[/]","");
@@ -382,18 +401,20 @@ public class Node {
 				}
 			}
 			if(higher==false) {//not higher...wait for response
-				try {
-					Thread.sleep(5 * 1000);
-					if(this.responded==true) {
-						System.out.println("I lost the election!");
-						this.responded=false;
-					}
-					else {
-						System.out.println("No response. I'm the Winner!");
-						setMasterNode(Global.node);
-						advert();
-					}
-				} catch (InterruptedException e) {e.printStackTrace();}
+				long timeEnd = System.currentTimeMillis() + (20 * 1000);
+				while (System.currentTimeMillis() < timeEnd) {
+					Thread.sleep(5*1000);
+					System.out.println("sleeping...");
+				}
+				if(this.responded==true) {
+					System.out.println("I lost the election!");
+					//this.responded=false;
+				}
+				else {
+					System.out.println("No response. I'm the Winner!");
+					setMasterNode(Global.node);
+					advert();
+				}
 			}
 			else{//higher...send message to network declaring yourself winner
 				System.out.println("Highest ID. I'm the Winner!");
@@ -424,7 +445,22 @@ public class Node {
 			System.out.println("sent message: "+send);
 		}
 	}
-	
+
+	public void signOff() {
+		for (int i = 0; i < nodes.size(); i++) {
+			String myID = String.valueOf(this.ID);
+			String send="signOff,"+myID;
+			byte[] buffer=send.getBytes();
+			InetAddress oldIP = Global.node.nodes.get(i).OwnIp;
+			int oldPort = Global.node.nodes.get(i).OwnPort;
+			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+			try {
+				Global.node.sendsocket.send(packet);
+			} catch (IOException e) {e.printStackTrace();}
+			System.out.println("sent message: "+send);
+		}
+	}
+
 	public Node getMasterNode() {
 		return this.masterNode;
 	}
@@ -433,7 +469,7 @@ public class Node {
 	public boolean equals(Object object) {
 		return this.equals((Node)object);
 	}
-	
+
 	public boolean equals(Node node) {
 		return this.getIpString().equals(node.getIpString()) && this.OwnPort == node.OwnPort;
 	}
@@ -467,19 +503,19 @@ public class Node {
 	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
 		int port;
-		
+
 		if (argv.length != 2) {
 			System.out.println(USAGE);
 			return;
 		}
-		
+
 		try {
 			port = Integer.valueOf(argv[0]);
 		} catch (NumberFormatException ex) {
 			System.out.println(USAGE);
 			return;
 		}
-		
+
 		if (argv[1].toUpperCase().equals("CME")) {
 			Global.node=new Node(Node.Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
 		} else if (argv[1].toUpperCase().equals("RA")) {
@@ -488,7 +524,7 @@ public class Node {
 			System.out.println(USAGE);
 			return;
 		}
-		
+
 		try {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
