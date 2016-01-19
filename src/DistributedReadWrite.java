@@ -42,7 +42,7 @@ public class DistributedReadWrite implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			
+			System.out.println("Requesting master string.");
 			wordString = this.node.getMasterString();
 			System.out.println("old string: " + wordString);
 			
@@ -60,7 +60,7 @@ public class DistributedReadWrite implements Runnable{
 		}
 		
 		System.out.println("-------------------");
-		wordString = this.node.getMasterString();
+		wordString = this.node.requestFinalString();
 		System.out.println("final string: " + wordString);
 		
 		// Check that all appended words are in the final string.

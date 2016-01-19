@@ -113,6 +113,13 @@ public class Incomming implements Runnable {
 					String port = token.nextToken();
 					Global.node.sendWordString(ip, Integer.valueOf(port));
 				}
+				
+				if (function.equals("str_request_final")) {
+					String ip = token.nextToken();
+					String port = token.nextToken();
+
+					Global.node.sendFinalString(ip, Integer.valueOf(port));
+				}
 
 				if (function.equals("str_update")) {
 					String wordString = token.hasMoreTokens() ? token.nextToken() : "";
