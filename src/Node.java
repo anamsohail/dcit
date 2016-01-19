@@ -149,7 +149,7 @@ public class Node {
 	public void sendWordString(String ip, int port) {
 		Node node = this.findNode(ip, port);
 		if (node != null) {
-			if (this.masterNode.equals(this)) {
+			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION && this.masterNode.equals(this)) {
 				System.out.println("Receive request from " + node);
 				this.requestQueue.add(node);
 				this.checkRequestQueue();
@@ -191,13 +191,15 @@ public class Node {
 			this.wordString = value;
 		}
 		
-		if (this.masterNode.equals(this)) {
-			System.out.println("Finished servicing " + this.servicedNode);
-			synchronized (this.servicedNode) {
-				this.servicedNode = null;
+		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+			if (this.masterNode.equals(this)) {
+				System.out.println("Finished servicing " + this.servicedNode);
+				synchronized (this.servicedNode) {
+					this.servicedNode = null;
+				}
+				
+				this.checkRequestQueue();
 			}
-			
-			this.checkRequestQueue();
 		}
 	}
 	
