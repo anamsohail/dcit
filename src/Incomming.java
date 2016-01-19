@@ -117,6 +117,11 @@ public class Incomming implements Runnable {
 					Global.node.sendWordString(ip, Integer.valueOf(port));
 				}
 				
+				if (function.equals("time_advance")) {
+					int time = Integer.valueOf(token.nextToken());
+					System.out.println("Time: " + time);
+				}
+				
 				if (function.equals("str_request_final")) {
 					String ip = token.nextToken();
 					String port = token.nextToken();
