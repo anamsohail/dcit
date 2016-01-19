@@ -14,6 +14,7 @@ public class Node {
 	public boolean responded = false;
 	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
+	public Thread timer = new Thread(new Timer());
 
 	public InetAddress OwnIp;
 	public int OwnPort;
@@ -95,7 +96,9 @@ public class Node {
 			}
 		}
 
-		if (!this.masterNode.equals(this)) {
+		if (this.masterNode.equals(this)) {
+			this.timer.start();
+		} else {
 			this.distribtedReadWrite.start();
 		}
 	}
@@ -460,6 +463,24 @@ public class Node {
 			System.out.println("sent message: "+send);
 		}
 	}
+	
+	/**
+	 * Tells all nodes to move their logical clocks one step forward.
+	 */
+	public void sendTimeAdvance(int logicalTime) {
+		if (!this.masterNode.equals(this)) {
+			return;
+		}
+		
+		byte[] buffer = ("time_advance," + logicalTime).getBytes();
+		for (Node node : nodes) {
+			try {
+				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	public Node getMasterNode() {
 		return this.masterNode;
@@ -539,5 +560,28 @@ public class Node {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}	
+	}
+	
+	public class Timer implements Runnable {
+
+		@Override
+		public void run() {
+			long timeEnd = System.currentTimeMillis() + (20 * 1000);
+			int logicalTime = 0;
+			while (System.currentTimeMillis() < timeEnd) {
+				try {
+					Thread.sleep(1000);
+					logicalTime += 1;
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				System.out.println("Advance time to: " + logicalTime);
+				Node.this.sendTimeAdvance(logicalTime);
+				
+			}
+			
+		}
+
 	}
 }
