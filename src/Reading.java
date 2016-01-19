@@ -31,6 +31,10 @@ public class Reading implements Runnable {
 				else if (s.equals("ELECTION")) {
 					Global.node.election();
 				}	
+				else if(s.equals("sign")) {
+					Global.node.signOff();
+					System.exit(0);
+				}
 			}
 		}
 		catch(Exception e){
