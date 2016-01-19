@@ -72,7 +72,7 @@ public class Incomming implements Runnable {
 					String IP=token.nextToken();
 					String PORT=token.nextToken();
 					String senderID = token.nextToken();
-					System.out.println("msg received: ELECTION from "+IP+","+PORT+","+","+senderID);
+					System.out.println("msg received: ELECTION from "+IP+","+PORT+","+senderID);
 					if(Integer.parseInt(senderID)<Global.node.ID) {
 						sendOK(IP,PORT);
 						System.out.println("My ID is higher so I'll start my own election!");
@@ -117,6 +117,23 @@ public class Incomming implements Runnable {
 				if (function.equals("str_update")) {
 					String wordString = token.hasMoreTokens() ? token.nextToken() : "";
 					Global.node.unlockWordString(wordString);
+				}
+				if(function.equals("signOff")) {
+					int senderID = Integer.parseInt(token.nextToken());					
+					int index = Global.node.findNodeIndex(senderID);
+					if(index==-1) {
+						System.out.println("Node not in list. So no sign off!");
+					}
+					else {//remove node from list
+						Global.node.nodes.remove(index);
+						System.out.println("Node ID: "+senderID+" removed!");
+						Node tempMasterNode = Global.node.getMasterNode();
+						if(tempMasterNode.ID==senderID) {
+							System.out.println("Master node has signed off!");
+							Global.node.setMasterNode(null);
+							Global.node.election();
+						}
+					}
 				}
 
 			}
