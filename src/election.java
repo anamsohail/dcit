@@ -28,10 +28,10 @@ public class election implements Runnable {
 				}
 			}
 			if(higher==false) {//not higher...wait for response
-				long timeEnd = System.currentTimeMillis() + (20 * 1000);
+				long timeEnd = System.currentTimeMillis() + (5 * 1000);
 				while (System.currentTimeMillis() < timeEnd) {
 					try {
-						Thread.sleep(5*1000);
+						Thread.sleep(1*1000);
 					} catch (InterruptedException e) {e.printStackTrace();}
 					System.out.println("sleeping...");
 				}

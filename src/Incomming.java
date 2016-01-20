@@ -137,12 +137,6 @@ public class Incomming implements Runnable {
 					else {//remove node from list
 						Global.node.nodes.remove(index);
 						System.out.println("Node ID: "+senderID+" removed!");
-						Node tempMasterNode = Global.node.getMasterNode();
-						if(tempMasterNode.ID==senderID) {
-							System.out.println("Master node has signed off!");
-							Global.node.setMasterNode(null);
-							Global.node.election();
-						}
 					}
 				}
 
@@ -216,7 +210,7 @@ public class Incomming implements Runnable {
 			catch (IOException e) {e.printStackTrace();}
 			System.out.println("sent message: "+send);
 			
-			System.out.println("Sending Master Node info to new node...");
+	/*		System.out.println("Sending Master Node info to new node...");
 			Node mNode = Global.node.getMasterNode();
 			String mIP = mNode.OwnIp.toString();
 			mIP = mIP.replaceAll("[/]","");
@@ -228,7 +222,8 @@ public class Incomming implements Runnable {
 			try {
 				Global.node.sendsocket.send(packet);
 			} catch (IOException e) {e.printStackTrace();}
-			System.out.println("sent message: "+send);
+			System.out.println("sent message: "+send);*/
+			
 		} catch (UnknownHostException e1) {e1.printStackTrace();}
 	}
 
