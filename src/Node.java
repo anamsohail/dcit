@@ -17,6 +17,7 @@ public class Node {
 	public Thread timer = new Thread(new Timer());
 	public List<String> appended = new ArrayList<String>();
 	public int nextRequestTime = -1;
+	public boolean isJoined = false;
 
 	public InetAddress OwnIp;
 	public int OwnPort;
@@ -25,8 +26,7 @@ public class Node {
 	public int ID;
 
 	private static String USAGE = "Usage: Node.java <port>";
-	private boolean isJoined = false;
-	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
+	private Node masterNode;
 	private String wordString = "";
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
@@ -67,6 +67,11 @@ public class Node {
 	public void sendStart(Algorithm algorithm) {
 		if (!this.isJoined) {
 			System.out.println("You must join a network before you can start.");
+			return;
+		}
+		
+		if (this.masterNode == null) {
+			System.out.println("You need to elect a master node first.");
 			return;
 		}
 
