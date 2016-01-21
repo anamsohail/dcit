@@ -12,25 +12,25 @@ import java.util.regex.Pattern;
 
 public class Node {
 	public boolean responded = false;
-	public DatagramSocket sendsocket;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
-	public Thread timer = new Thread(new Timer());
 	public List<String> appended = new ArrayList<String>();
-	public int nextRequestTime = -1;
 	public boolean isJoined = false;
 
-	public InetAddress OwnIp;
-	public int OwnPort;
-
+	public DatagramSocket sendsocket;
 	public Algorithm algorithm;
+	public InetAddress OwnIp;
+	public int nextRequestTime;
+	public int OwnPort;
 	public int ID;
 
 	private static String USAGE = "Usage: Node.java <port>";
-	private Node masterNode;
-	private String wordString = "";
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
-	private Node servicedNode = null;
+	
+	private Node servicedNode;
+	private String wordString;
+	private Node masterNode;
+	private Thread timer;
 
 	public void create(String ip,int port){
 		try{
@@ -90,6 +90,15 @@ public class Node {
 	public void start(Algorithm algorithm){
 		System.out.println("Starting with algorithm: " + algorithm);
 		this.algorithm = algorithm;
+		
+		// Reset values used during the distributed read/write
+		this.nextRequestTime = -1;
+		this.wordString = "";
+		this.servicedNode = null;
+		this.appended.clear();
+		this.requestQueue.clear();
+		this.doneNodes.clear();
+		this.timer = new Thread(new Timer());
 		
 		if (this.masterNode.equals(this)) {
 			this.timer.start();
