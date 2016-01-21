@@ -1,29 +1,26 @@
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
+import org.apache.xmlrpc.XmlRpcException;
 
 
 public class election implements Runnable {
 	@Override
 	public void run() {
 		if(Global.node.nodes.size()>0) {//send to higher IDs
-			String myIP = Global.node.OwnIp.toString();
-			myIP = myIP.replaceAll("[/]","");
+			String myIP = Global.node.OwnIp;
 			String myPort = String.valueOf(Global.node.OwnPort);
 			String myID = String.valueOf(Global.node.ID);
 			String send="ELECTION,"+myIP+","+myPort+","+myID;
-			byte[] buffer=send.getBytes();
 			boolean higher = true;
 			for (int i = 0; i < Global.node.nodes.size(); i++) {
 				int oldID = Global.node.nodes.get(i).ID;
 				if(oldID>Global.node.ID) {
 					higher = false;
-					InetAddress oldIP = Global.node.nodes.get(i).OwnIp;
+					String oldIP = Global.node.nodes.get(i).OwnIp;
 					int oldPort = Global.node.nodes.get(i).OwnPort;
-					DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+					Global.node.toSend(oldIP, oldPort);
+					Object[] sendObject = new Object[] {send};
 					try {
-						Global.node.sendsocket.send(packet);
-					} catch (IOException e) {e.printStackTrace();}
+						Global.node.sender.execute("receiver.election", sendObject);
+					} catch (XmlRpcException e) {e.printStackTrace();}
 					System.out.println("sent message: "+send);
 				}
 			}
@@ -54,8 +51,6 @@ public class election implements Runnable {
 		else {
 			System.out.println("No nodes connected. Setting self to master node");
 			Global.node.setMasterNode(Global.node);
-		}
-		
+		}		
 	}
-
 }

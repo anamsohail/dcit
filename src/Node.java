@@ -1,7 +1,6 @@
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -10,20 +9,22 @@ import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.xmlrpc.XmlRpcException;
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+
 public class Node {
-	public boolean responded = false;
-	public DatagramSocket sendsocket;
+	public String OwnIp;
+	public int OwnPort;
+	public int ID;
+	XmlRpcClient sender; 
+	XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 	public ArrayList<Node> nodes = new ArrayList<Node>();
+	public boolean responded = false;
 	public Thread timer = new Thread(new Timer());
 	public List<String> appended = new ArrayList<String>();
 	public int nextRequestTime = -1;
-
-	public InetAddress OwnIp;
-	public int OwnPort;
-
 	public Algorithm algorithm;
-	public int ID;
-
 	private static String USAGE = "Usage: Node.java <port>";
 	private boolean isJoined = false;
 	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
@@ -32,33 +33,127 @@ public class Node {
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
 
+	/**
+	 * Initializes New Node
+	 * @param ip
+	 * @param port
+	 */
 	public void create(String ip,int port){
 		try{
-			OwnIp = InetAddress.getByName(ip);
-			sendsocket = new DatagramSocket();
+			OwnIp = ip;
 			OwnPort = port;
+			sender = new XmlRpcClient();
 			ID = (int) (Math.random() * (10000 - 0));
 		}catch(Exception e){e.printStackTrace();}
 	}
 
 	/**
+	 * Configures the node to send message to the specified IP-Port
+	 * @param ip
+	 * @param port 
+	 */
+	public void toSend(String ip, int port) {
+		try {
+			config.setServerURL(new URL("http://"+ip+":"+port));
+		} catch (MalformedURLException e) {e.printStackTrace();}
+		config.setEnabledForExtensions(true);
+		sender.setConfig(config);
+	}
+
+	/**
 	 * Joins a network by connecting to a node that
-	 * is already in the network.
-	 * 
+	 * is already in the network. 
 	 * @param Ip
 	 * @param port
 	 * @param myPort
 	 */
-	public void join(InetAddress Ip,int port, int myPort){
+	public void join(String ip,int port, int myPort){
 		try{
-			String IpPort=Ip.getHostAddress()+","+port+","+myPort+","+this.ID;
+			String IpPort=ip+","+port+","+OwnIp+","+myPort+","+this.ID;
 			String send="join,"+IpPort;
-			byte[] buffer=send.getBytes();
-			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, Ip, port);
-			sendsocket.send(packet);
+			toSend(ip, port);
+			Object[] sendObject = new Object[] {send};
+			sender.execute("receiver.join", sendObject);
 			this.isJoined = true;
 			System.out.println("sent message: "+send);
 		}catch(Exception e ){e.printStackTrace();}	
+	}
+
+	public void sendIDtoNewNode(String ip, String port, int ID) {
+		String send="newID,"+String.valueOf(ID);
+		toSend(ip, Integer.parseInt(port));
+		Object[] sendObject = new Object[] {send};
+		try {
+			sender.execute("receiver.newID", sendObject);
+		} catch (XmlRpcException e) {e.printStackTrace();}
+		System.out.println("sent message: "+send);
+	}
+
+	public void sendToAll(String ip, String port, int newID) {
+		if(nodes.size()>0) {
+			System.out.println("sending new node to all other nodes!");
+			for (int i = 0; i < nodes.size(); i++) {//send new node to already existing nodes
+				String IpPort=ip+","+port+","+String.valueOf(newID);
+				String send="new,"+IpPort;
+				String oldIP = nodes.get(i).OwnIp;
+				int oldPort = nodes.get(i).OwnPort;
+				toSend(oldIP, oldPort);
+				Object[] sendObject = new Object[] {send};
+				try {
+					sender.execute("receiver.newNode", sendObject);
+				} catch (XmlRpcException e) {e.printStackTrace();}
+				System.out.println("sent message: "+send);
+			}
+		}
+		sendListToNewNode(ip,port);
+		System.out.println("adding new node to List");
+		addNodeToList(ip, Integer.parseInt(port), newID);
+	}
+
+	public void sendListToNewNode(String ip, String port) {
+		if(nodes.size()>0) {
+			System.out.println("sending list to new node!");
+			for (int i = 0; i < nodes.size(); i++) {//send nodes one by one to new node
+				String oldIP = nodes.get(i).OwnIp;
+				String oldPort = String.valueOf(nodes.get(i).OwnPort);
+				String oldID = String.valueOf(nodes.get(i).ID);
+				String IpPort=oldIP+","+oldPort+","+oldID;
+				String send="new,"+IpPort;
+				toSend(ip, Integer.parseInt(port));
+				Object[] sendObject = new Object[] {send};
+				try {
+					sender.execute("receiver.newNode", sendObject);
+				} catch (XmlRpcException e) {e.printStackTrace();}
+				System.out.println("sent message: "+send);
+			}
+		}
+		System.out.println("Sending my info to new node...");
+		String myIP = OwnIp;
+		String myPort = String.valueOf(OwnPort);
+		String myID = String.valueOf(ID);
+		String IpPort=myIP+","+myPort+","+myID;
+		String send="new,"+IpPort;
+		toSend(ip, Integer.parseInt(port));
+		Object[] sendObject = new Object[] {send};
+		try {
+			sender.execute("receiver.newNode", sendObject);
+		} catch (XmlRpcException e) {e.printStackTrace();}
+		System.out.println("sent message: "+send);
+	}
+
+	public void sendOK(String ip, String port) {
+
+		int PORT = Integer.parseInt(port);
+		String myIP = OwnIp;
+		String myPort = String.valueOf(OwnPort);
+		String myID = String.valueOf(ID);
+		String send="OK,"+myIP+","+myPort+","+myID;
+		toSend(ip, PORT);
+		Object[] sendObject = new Object[] {send};
+		try {
+			sender.execute("receiver.ok", sendObject);
+		} catch (XmlRpcException e) {e.printStackTrace();}
+		System.out.println("sent message: "+send);
 	}
 
 	/**
@@ -69,23 +164,20 @@ public class Node {
 			System.out.println("You must join a network before you can start.");
 			return;
 		}
-
-		byte[] buffer = ("start," + algorithm.ordinal()).getBytes();
+		String send = "start,"+algorithm.ordinal();
+		Object[] sendObject = new Object[] {send};
 		for (Node node : nodes) {
+			toSend(node.OwnIp, node.OwnPort);
 			try {
-				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+				sender.execute("receiver.start", sendObject);
+			} catch (XmlRpcException e) {e.printStackTrace();}
 		}
-
 		this.start(algorithm);
 	}
 
 	public void start(Algorithm algorithm){
 		System.out.println("Starting with algorithm: " + algorithm);
 		this.algorithm = algorithm;
-		
 		if (this.masterNode.equals(this)) {
 			this.timer.start();
 		} else {
@@ -98,24 +190,18 @@ public class Node {
 	 * @return the master node's word string.
 	 */
 	public String getMasterString() {
-		byte[] buffer = String.format("str_request,%s,%s", this.getIpString(), this.OwnPort).getBytes();
-		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
-
+		String send="str_request,"+this.OwnIp+","+this.OwnPort;
+		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
+		Object[] sendObject = new Object[] {send};
 		try {
-			this.sendsocket.send(packet);
-
+			sender.execute("receiver.strRequest", sendObject);
 			// Wait for updated value (see Node::unlockWordString).
 			synchronized(this.wordString) {
 				this.wordString.wait();
 			}
-
 			return this.wordString;
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
+		} catch (XmlRpcException e) {e.printStackTrace();
+		} catch (InterruptedException e) {e.printStackTrace();}
 		return null;
 	}
 
@@ -150,7 +236,7 @@ public class Node {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void sendFinalString(String ip, int port) {
 		Node node = this.findNode(ip, port);
 		if (node != null) {
@@ -179,38 +265,32 @@ public class Node {
 			this.wordString.notify();
 			this.wordString = value;
 		}
-		
+
 		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
 			if (this.masterNode.equals(this)) {
 				System.out.println("Finished servicing " + this.servicedNode);
 				synchronized (this.servicedNode) {
 					this.servicedNode = null;
 				}
-				
+
 				this.checkRequestQueue();
 			}
 		}
 	}
-	
+
 	public String requestFinalString(){
-		byte[] buffer = String.format("str_request_final,%s,%s", this.getIpString(), this.OwnPort).getBytes();
-		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, this.masterNode.OwnIp, this.masterNode.OwnPort);
-
+		String send = "str_request_final,"+this.OwnIp+","+this.OwnPort;
+		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
+		Object[] sendObject = new Object[] {send};
 		try {
-			this.sendsocket.send(packet);
-
+			sender.execute("receiver.strRequestFinal", sendObject);
 			// Wait for updated value (see Node::unlockWordString).
 			synchronized(this.wordString) {
 				this.wordString.wait();
 			}
-
 			return this.wordString;
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
+		} catch (XmlRpcException e) {e.printStackTrace();
+		} catch (InterruptedException e) {e.printStackTrace();}
 		return null;
 	}
 
@@ -221,7 +301,7 @@ public class Node {
 	 * @param ip
 	 * @param port
 	 */
-	public void addNodeToList(InetAddress ip, int port, int ID) {
+	public void addNodeToList(String ip, int port, int ID) {
 		//add new node to the list
 		Node newNode = new Node();
 		newNode.OwnIp = ip;
@@ -243,7 +323,7 @@ public class Node {
 
 	public void Display(){
 		try{
-			String IP=OwnIp.getHostAddress();
+			String IP=OwnIp;
 			String port=String.valueOf(OwnPort);
 			String message="My IP: "+IP+" Port: "+port+" ID: "+ID;
 			System.out.println(message);
@@ -258,15 +338,13 @@ public class Node {
 	 * @return true if the node is in the network, otherwise false.
 	 */
 	public boolean checkInList(String ip, String port) {
-		String myIP = OwnIp.toString();
-		myIP = myIP.replaceAll("[/]","");
+		String myIP = OwnIp;
 		String myPort = String.valueOf(OwnPort);
 		if(myIP.equals(ip) & myPort.equals(port)) return true;
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
 			for (int i = 0; i < nodes.size(); i++) {
-				String oldIP = nodes.get(i).OwnIp.toString();
-				oldIP = oldIP.replaceAll("[/]","");
+				String oldIP = nodes.get(i).OwnIp;
 				String oldPort = String.valueOf(nodes.get(i).OwnPort);
 				if(oldIP.equals(ip) & oldPort.equals(port)) return true;
 			}
@@ -303,18 +381,16 @@ public class Node {
 	 */
 	public Node findNode(String ip, int port) {
 		for (Node node: this.nodes) {
-			if (node.getIpString().equals(ip) && node.OwnPort == port) {
+			if (node.OwnIp.equals(ip) && node.OwnPort == port) {
 				// Node found.
 				return node;
 			}
 		}
-
 		// Check if requested node is this instance.
-		if (this.getIpString().equals(ip) && port == this.OwnPort) {
+		if (this.OwnIp.equals(ip) && port == this.OwnPort) {
 			return this;
 		}
-
-		System.out.println(this.getIpString());
+		System.out.println(this.OwnIp);
 		// Node not found.
 		return null;
 	}
@@ -335,30 +411,15 @@ public class Node {
 	}
 
 	/**
-	 * Extract the IP address from the format [hostname]/[IP address]
-	 */
-	public String getIpString() {
-		Matcher matcher = Pattern.compile(".*/(.*)").matcher(this.OwnIp.toString());
-		if (matcher.find()) {
-			return matcher.group(1);
-		} else {
-			return this.OwnIp.toString();
-		}
-	}
-
-	/**
 	 * Send a word string to the provided node.
 	 */
 	private void sendWordString(String value, Node destination) {
-
-		byte[] buffer = String.format("str_update,%s", value).getBytes();
-		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, destination.OwnIp, destination.OwnPort);
-
+		String send="str_update,"+value;
+		toSend(destination.OwnIp, destination.OwnPort);
+		Object[] sendObject = new Object[] {send};
 		try {
-			this.sendsocket.send(packet);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			sender.execute("receiver.strUpdate", sendObject);
+		} catch (XmlRpcException e) {e.printStackTrace();}
 	}
 
 	public void setMasterNode(Node Winner) {
@@ -379,18 +440,17 @@ public class Node {
 
 	public void advert() {
 		for (int i = 0; i < nodes.size(); i++) {
-			String myIP = this.OwnIp.toString();
-			myIP = myIP.replaceAll("[/]","");
+			String myIP = this.OwnIp;
 			String myPort = String.valueOf(this.OwnPort);
 			String myID = String.valueOf(this.ID);
 			String send="MASTER,"+myIP+","+myPort+","+myID;
-			byte[] buffer=send.getBytes();
-			InetAddress oldIP = Global.node.nodes.get(i).OwnIp;
+			String oldIP = Global.node.nodes.get(i).OwnIp;
 			int oldPort = Global.node.nodes.get(i).OwnPort;
-			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+			toSend(oldIP, oldPort);
+			Object[] sendObject = new Object[] {send};
 			try {
-				Global.node.sendsocket.send(packet);
-			} catch (IOException e) {e.printStackTrace();}
+				sender.execute("receiver.master", sendObject);
+			} catch (XmlRpcException e) {e.printStackTrace();}
 			System.out.println("sent message: "+send);
 		}
 	}
@@ -399,17 +459,17 @@ public class Node {
 		for (int i = 0; i < nodes.size(); i++) {
 			String myID = String.valueOf(this.ID);
 			String send="signOff,"+myID;
-			byte[] buffer=send.getBytes();
-			InetAddress oldIP = Global.node.nodes.get(i).OwnIp;
+			String oldIP = Global.node.nodes.get(i).OwnIp;
 			int oldPort = Global.node.nodes.get(i).OwnPort;
-			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, oldIP, oldPort);
+			toSend(oldIP, oldPort);
+			Object[] sendObject = new Object[] {send};
 			try {
-				Global.node.sendsocket.send(packet);
-			} catch (IOException e) {e.printStackTrace();}
+				sender.execute("receiver.signOff", sendObject);
+			} catch (XmlRpcException e) {e.printStackTrace();}
 			System.out.println("sent message: "+send);
 		}
 	}
-	
+
 	/**
 	 * Tells all nodes to move their logical clocks one step forward.
 	 */
@@ -417,14 +477,13 @@ public class Node {
 		if (!this.masterNode.equals(this)) {
 			return;
 		}
-		
-		byte[] buffer = ("time_advance," + logicalTime).getBytes();
+		String send = "time_advance,"+logicalTime;
 		for (Node node : nodes) {
+			toSend(node.OwnIp, node.OwnPort);
+			Object[] sendObject = new Object[] {send};
 			try {
-				this.sendsocket.send(new DatagramPacket(buffer, buffer.length, node.OwnIp, node.OwnPort));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+				sender.execute("receiver.timeAdvance", sendObject);
+			} catch (XmlRpcException e) {e.printStackTrace();}
 		}
 	}
 
@@ -438,20 +497,14 @@ public class Node {
 	}
 
 	public boolean equals(Node node) {
-		return this.getIpString().equals(node.getIpString()) && this.OwnPort == node.OwnPort;
+		return this.OwnIp.equals(node.OwnIp) && this.OwnPort == node.OwnPort;
 	}
-	
-	@Override
-	public String toString() {
-		return "[" + this.getIpString() + ":" + this.OwnPort + "]";
-	}
-	
+
 	private void checkRequestQueue() {
 		// Only the master node should run this code.
 		if (!this.masterNode.equals(this)) {
 			return;
 		}
-		
 		if (this.servicedNode == null) {
 			Node node = this.requestQueue.poll();
 			if (node != null) {
@@ -470,19 +523,16 @@ public class Node {
 	//Usage: join <IP address> <port>
 	public static void main(String[] argv){
 		int port;
-
 		if (argv.length != 1) {
 			System.out.println(USAGE);
 			return;
 		}
-
 		try {
 			port = Integer.valueOf(argv[0]);
 		} catch (NumberFormatException ex) {
 			System.out.println(USAGE);
 			return;
 		}
-
 		try {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
@@ -499,9 +549,8 @@ public class Node {
 			e.printStackTrace();
 		}	
 	}
-	
-	public class Timer implements Runnable {
 
+	public class Timer implements Runnable {
 		@Override
 		public void run() {
 			long timeEnd = System.currentTimeMillis() + (20 * 1000);
@@ -513,12 +562,9 @@ public class Node {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
 				System.out.println("Advance time to: " + logicalTime);
 				Node.this.sendTimeAdvance(logicalTime);
-				
 			}
-			
 		}
 	}
 }

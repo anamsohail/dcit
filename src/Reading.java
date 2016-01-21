@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.util.StringTokenizer;
 
 
@@ -18,9 +17,7 @@ public class Reading implements Runnable {
 						System.out.println("Usage: join <IP address> <port>");
 						continue;
 					}
-					String nIP = st.nextToken();
-					InetAddress IP = InetAddress.getByName(nIP);
-					nIP = nIP.replaceAll("[/]","");
+					String IP = st.nextToken();
 					int port = Integer.parseInt(new String(st.nextToken()));
 					int myPort = Global.node.OwnPort;
 					Global.node.join(IP, port, myPort);
