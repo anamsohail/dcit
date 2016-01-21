@@ -47,6 +47,9 @@ public class Reading implements Runnable {
 					Global.node.signOff();
 					System.exit(0);
 				}
+				else {
+					System.out.println("Unknown command: " + s);
+				}
 			}
 		}
 		catch(Exception e){
