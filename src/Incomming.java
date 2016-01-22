@@ -157,7 +157,7 @@ public class Incomming implements Runnable {
 			String ip = token.nextToken();
 			int port = Integer.valueOf(token.nextToken());
 			int timeStamp = Integer.valueOf(token.nextToken());
-			Global.node.receiveRequestResponse(ip, port, timeStamp);
+			Global.node.receiveWordStringOK(ip, port, timeStamp);
 		}
 	}
 	

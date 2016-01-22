@@ -158,17 +158,29 @@ public class Node {
 			System.out.println("Waiting for " + this.nextRequestTime + " seconds");
 			
 			if (this.algorithm == Algorithm.RICART_AGRAWALA) {
-				this.requestMasterString(this.nextRequestTime);
+				this.requestAllForWordString(this.nextRequestTime);
 			}
 		}
 	}
 	
-	private void requestMasterString(int timeStamp) {
+	/**
+	 * Requests all nodes for access to the word string.
+	 * 
+	 * @param timeStamp
+	 */
+	private void requestAllForWordString(int timeStamp) {
 		for (Node node : this.nodes) {
 			this.requestWordString(node, timeStamp);
 		}
 	}
 	
+	/**
+	 * Received a request from a node for the word string.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @param timeStamp
+	 */
 	public void receiveWordStringRequest(String ip, int port, int timeStamp) {
 		Node node = this.findNode(ip, port);
 		if (node == null) {
@@ -192,13 +204,26 @@ public class Node {
 		}
 	}
 	
+	/**
+	 * Tell the requesting node that this node does not need the word string.
+	 * 
+	 * @param node
+	 * @param timeStamp
+	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
 		System.out.println("Send OK to " + node.OwnPort);
 		String send = String.format("str_request_ok,%s,%s,%d", this.OwnIp, this.OwnPort, timeStamp);
 		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
 	
-	public void receiveRequestResponse(String ip, int port, int timeStamp) {
+	/**
+	 * Receive "OK" message from a node.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @param timeStamp
+	 */
+	public void receiveWordStringOK(String ip, int port, int timeStamp) {
 		System.out.println("Receive OK from " + port + " at " + timeStamp);
 		Node node = this.findNode(ip, port);
 		if (node == null) {
@@ -210,6 +235,8 @@ public class Node {
 		}
 		
 		this.requestQueue.add(node);
+		
+		// We have access to the word string if all nodes respond with "OK"
 		if (this.requestQueue.size() == this.nodes.size()) {
 			this.requestQueue.clear();
 			this.hasString = true;
@@ -278,7 +305,7 @@ public class Node {
 					this.hasString = false;
 					
 					if (this.nextRequestTime < 20) {
-					this.requestMasterString(this.nextRequestTime);
+					this.requestAllForWordString(this.nextRequestTime);
 					} else {
 						System.out.println("Done");
 					}
