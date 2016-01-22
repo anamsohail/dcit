@@ -248,7 +248,7 @@ public class Node {
 			new Exception("Duplicate node " + node).printStackTrace();
 		}
 		
-		System.out.println("Receive OK from " + node);
+		System.out.println("OK from " + node);
 		
 		this.requestQueue.add(node);
 		
@@ -256,8 +256,6 @@ public class Node {
 		if (this.requestQueue.size() == this.nodes.size()) {
 			this.requestQueue.clear();
 			this.hasString = true;
-			System.out.println("In CS");
-			
 			this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort}, node.OwnIp, node.OwnPort);
 		}
 	}
@@ -273,7 +271,7 @@ public class Node {
 		if (this.algorithm == Algorithm.RICART_AGRAWALA)  {
 			System.out.println("REQUEST to " + node + " for " + timeStamp);
 		}
-		
+		System.out.println(node.OwnIp + ":" + node.OwnPort);
 		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
 		this.sender.execute("strRequest", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
