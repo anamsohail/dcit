@@ -154,9 +154,7 @@ public class Node {
 		this.timer = new Thread(new Timer(this));
 		
 		if (this.isMasterNode()) {
-			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
-				this.timer.start();
-			}
+			this.timer.start();
 		} else {
 			this.nextRequestTime = this.distReadWrite.getRandomWaitingTime();
 			System.out.println("Waiting for " + this.nextRequestTime + " seconds");
@@ -256,7 +254,6 @@ public class Node {
 		if (this.requestQueue.size() == this.nodes.size()) {
 			this.requestQueue.clear();
 			this.hasString = true;
-			this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort}, node.OwnIp, node.OwnPort);
 		}
 	}
 	
