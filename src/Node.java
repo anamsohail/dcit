@@ -456,7 +456,7 @@ public class Node {
 	}
 	
 	public boolean isMasterNode() {
-		return this.isMasterNode();
+		return this.masterNode.equals(this);
 	}
 
 	/**
