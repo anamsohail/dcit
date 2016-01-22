@@ -1,6 +1,4 @@
 import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -9,21 +7,16 @@ import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.client.XmlRpcClient;
-import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-
 public class Node {
 	public String OwnIp;
 	public int OwnPort;
 	public int ID;
-	XmlRpcClient sender; 
-	XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
 	private Thread timer;
 	public int nextRequestTime;
 	public Algorithm algorithm;
+	public Sender sender = new Sender();
 	private static String USAGE = "Usage: Node.java <port>";
 	public boolean isJoined = false;
 	private Node masterNode;
@@ -45,22 +38,8 @@ public class Node {
 		try{
 			OwnIp = ip;
 			OwnPort = port;
-			sender = new XmlRpcClient();
 			ID = (int) (Math.random() * (10000 - 0));
 		}catch(Exception e){e.printStackTrace();}
-	}
-
-	/**
-	 * Configures the node to send message to the specified IP-Port
-	 * @param ip
-	 * @param port 
-	 */
-	public void toSend(String ip, int port) {
-		try {
-			config.setServerURL(new URL("http://"+ip+":"+port));
-		} catch (MalformedURLException e) {e.printStackTrace();}
-		config.setEnabledForExtensions(true);
-		sender.setConfig(config);
 	}
 
 	/**
@@ -74,9 +53,7 @@ public class Node {
 		try{
 			String IpPort=ip+","+port+","+OwnIp+","+myPort+","+this.ID;
 			String send="join,"+IpPort;
-			toSend(ip, port);
-			Object[] sendObject = new Object[] {send};
-			sender.execute("receiver.join", sendObject);
+			this.sender.execute("join", new Object[] { send }, ip, port);
 			this.isJoined = true;
 			System.out.println("sent message: "+send);
 		}catch(Exception e ){e.printStackTrace();}	
@@ -84,11 +61,7 @@ public class Node {
 
 	public void sendIDtoNewNode(String ip, String port, int ID) {
 		String send="newID,"+String.valueOf(ID);
-		toSend(ip, Integer.parseInt(port));
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.newID", sendObject);
-		} catch (XmlRpcException e) {e.printStackTrace();}
+		this.sender.execute("newID", new Object[] { send }, ip, Integer.parseInt(port));
 		System.out.println("sent message: "+send);
 	}
 
@@ -100,11 +73,7 @@ public class Node {
 				String send="new,"+IpPort;
 				String oldIP = nodes.get(i).OwnIp;
 				int oldPort = nodes.get(i).OwnPort;
-				toSend(oldIP, oldPort);
-				Object[] sendObject = new Object[] {send};
-				try {
-					sender.execute("receiver.newNode", sendObject);
-				} catch (XmlRpcException e) {e.printStackTrace();}
+				this.sender.execute("newNode", new Object[] { send }, oldIP, oldPort);
 				System.out.println("sent message: "+send);
 			}
 		}
@@ -122,11 +91,7 @@ public class Node {
 				String oldID = String.valueOf(nodes.get(i).ID);
 				String IpPort=oldIP+","+oldPort+","+oldID;
 				String send="new,"+IpPort;
-				toSend(ip, Integer.parseInt(port));
-				Object[] sendObject = new Object[] {send};
-				try {
-					sender.execute("receiver.newNode", sendObject);
-				} catch (XmlRpcException e) {e.printStackTrace();}
+				this.sender.execute("newNode", new Object[] { send }, ip, Integer.parseInt(port));
 				System.out.println("sent message: "+send);
 			}
 		}
@@ -136,11 +101,7 @@ public class Node {
 		String myID = String.valueOf(ID);
 		String IpPort=myIP+","+myPort+","+myID;
 		String send="new,"+IpPort;
-		toSend(ip, Integer.parseInt(port));
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.newNode", sendObject);
-		} catch (XmlRpcException e) {e.printStackTrace();}
+		this.sender.execute("newNode", new Object[] { send }, ip, Integer.parseInt(port));
 		System.out.println("sent message: "+send);
 	}
 
@@ -151,11 +112,7 @@ public class Node {
 		String myPort = String.valueOf(OwnPort);
 		String myID = String.valueOf(ID);
 		String send="OK,"+myIP+","+myPort+","+myID;
-		toSend(ip, PORT);
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.ok", sendObject);
-		} catch (XmlRpcException e) {e.printStackTrace();}
+		this.sender.execute("ok", new Object[] { send }, ip, PORT);
 		System.out.println("sent message: "+send);
 	}
 
@@ -173,12 +130,8 @@ public class Node {
 			return;
 		}
 		String send = "start,"+algorithm.ordinal();
-		Object[] sendObject = new Object[] {send};
 		for (Node node : nodes) {
-			toSend(node.OwnIp, node.OwnPort);
-			try {
-				sender.execute("receiver.start", sendObject);
-			} catch (XmlRpcException e) {e.printStackTrace();}
+			this.sender.execute("start", new Object[] { send }, node.OwnIp, node.OwnPort);
 		}
 		this.start(algorithm);
 	}
@@ -243,14 +196,7 @@ public class Node {
 	private void sendWordStringOK(Node node, int timeStamp) {
 		System.out.println("Send OK to " + node.OwnPort);
 		String send = String.format("str_request_ok,%s,%s,%d", this.OwnIp, this.OwnPort, timeStamp);
-		Object[] sendObject = new Object[] { send };
-
-		this.toSend(node.OwnIp, node.OwnPort);
-		try {
-			sender.execute("receiver.strRequestOk", sendObject);
-		} catch (XmlRpcException e) {
-			e.printStackTrace();
-		}
+		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
 	
 	public void receiveRequestResponse(String ip, int port, int timeStamp) {
@@ -270,12 +216,7 @@ public class Node {
 			this.hasString = true;
 			System.out.println("In CS");
 			
-			this.toSend(node.OwnIp, node.OwnPort);
-			try {
-				sender.execute("receiver.strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort+ "," + timeStamp});
-			} catch (XmlRpcException e) {
-				e.printStackTrace();
-			}
+			this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort+ "," + timeStamp}, node.OwnIp, node.OwnPort);
 		}
 	}
 	
@@ -292,13 +233,7 @@ public class Node {
 		}
 		
 		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
-		this.toSend(node.OwnIp, node.OwnPort);
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.strRequest", sendObject);
-		} catch (XmlRpcException e) {
-			e.printStackTrace();
-		}
+		this.sender.execute("strRequest", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
 
 	/**
@@ -375,13 +310,7 @@ public class Node {
 	public void requestFinalString(){
 		System.out.println("Requesting final string");
 		String send = "str_request_final,"+this.OwnIp+","+this.OwnPort;
-		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.strRequestFinal", sendObject);
-		} catch (XmlRpcException e) {
-			e.printStackTrace();
-		}
+		this.sender.execute("strRequestFinal", new Object[] { send }, this.masterNode.OwnIp, this.masterNode.OwnPort);
 	}
 
 	/**
@@ -509,11 +438,7 @@ public class Node {
 	 */
 	private void sendWordString(String value, Node destination) {
 		String send="str_update,"+value;
-		toSend(destination.OwnIp, destination.OwnPort);
-		Object[] sendObject = new Object[] {send};
-		try {
-			sender.execute("receiver.strUpdate", sendObject);
-		} catch (XmlRpcException e) {e.printStackTrace();}
+		this.sender.execute("strUpdate", new Object[] { send }, destination);
 	}
 
 	public void setMasterNode(Node Winner) {
@@ -540,11 +465,7 @@ public class Node {
 			String send="MASTER,"+myIP+","+myPort+","+myID;
 			String oldIP = Global.node.nodes.get(i).OwnIp;
 			int oldPort = Global.node.nodes.get(i).OwnPort;
-			toSend(oldIP, oldPort);
-			Object[] sendObject = new Object[] {send};
-			try {
-				sender.execute("receiver.master", sendObject);
-			} catch (XmlRpcException e) {e.printStackTrace();}
+			this.sender.execute("master", new Object[] { send }, oldIP, oldPort);
 			System.out.println("sent message: "+send);
 		}
 	}
@@ -555,11 +476,7 @@ public class Node {
 			String send="signOff,"+myID;
 			String oldIP = Global.node.nodes.get(i).OwnIp;
 			int oldPort = Global.node.nodes.get(i).OwnPort;
-			toSend(oldIP, oldPort);
-			Object[] sendObject = new Object[] {send};
-			try {
-				sender.execute("receiver.signOff", sendObject);
-			} catch (XmlRpcException e) {e.printStackTrace();}
+			this.sender.execute("signOff", new Object[] { send }, oldIP, oldPort);
 			System.out.println("sent message: "+send);
 		}
 	}
@@ -571,13 +488,10 @@ public class Node {
 		if (!this.masterNode.equals(this)) {
 			return;
 		}
+		
 		String send = "time_advance,"+logicalTime;
 		for (Node node : nodes) {
-			toSend(node.OwnIp, node.OwnPort);
-			Object[] sendObject = new Object[] {send};
-			try {
-				sender.execute("receiver.timeAdvance", sendObject);
-			} catch (XmlRpcException e) {e.printStackTrace();}
+			this.sender.execute("timeAdvance", new Object[] { send }, node);
 		}
 	}
 

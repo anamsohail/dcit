@@ -1,5 +1,3 @@
-import org.apache.xmlrpc.XmlRpcException;
-
 
 public class election implements Runnable {
 	@Override
@@ -16,11 +14,7 @@ public class election implements Runnable {
 					higher = false;
 					String oldIP = Global.node.nodes.get(i).OwnIp;
 					int oldPort = Global.node.nodes.get(i).OwnPort;
-					Global.node.toSend(oldIP, oldPort);
-					Object[] sendObject = new Object[] {send};
-					try {
-						Global.node.sender.execute("receiver.election", sendObject);
-					} catch (XmlRpcException e) {e.printStackTrace();}
+					Global.node.sender.execute("election", new Object[] { send }, oldIP, oldPort);
 					System.out.println("sent message: "+send);
 				}
 			}
