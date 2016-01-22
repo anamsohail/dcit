@@ -156,8 +156,7 @@ public class Incomming implements Runnable {
 		if (function.equals("str_request_ok")) {
 			String ip = token.nextToken();
 			int port = Integer.valueOf(token.nextToken());
-			int timeStamp = Integer.valueOf(token.nextToken());
-			Global.node.receiveWordStringOK(ip, port, timeStamp);
+			Global.node.receiveWordStringOK(ip, port);
 		}
 	}
 	

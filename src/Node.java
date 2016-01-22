@@ -194,12 +194,18 @@ public class Node {
 				this.checkRequestQueue();
 			}
 		} else if (this.algorithm == Algorithm.RICART_AGRAWALA) {
+			
 			System.out.println("receive REQUEST from " + port + " at " + timeStamp);
-			if ((!this.isMasterNode() && (this.hasString || timeStamp >= this.nextRequestTime))) {
-				System.out.println("queueing request from " + port);
-				this.requestQueue.add(node);
+			if (this.isMasterNode()) {
+				this.sendWordStringOK(node);
 			} else {
-				this.sendWordStringOK(node, timeStamp);
+				boolean hasPriority = (this.nextRequestTime < timeStamp) || (this.nextRequestTime == timeStamp && this.ID < node.ID);
+				if (this.hasString || hasPriority) {
+					System.out.println("Queue Request from " + port);
+					this.requestQueue.add(node);
+				} else {
+					this.sendWordStringOK(node);
+				}
 			}
 		}
 	}
@@ -210,9 +216,9 @@ public class Node {
 	 * @param node
 	 * @param timeStamp
 	 */
-	private void sendWordStringOK(Node node, int timeStamp) {
+	private void sendWordStringOK(Node node) {
 		System.out.println("Send OK to " + node.OwnPort);
-		String send = String.format("str_request_ok,%s,%s,%d", this.OwnIp, this.OwnPort, timeStamp);
+		String send = String.format("str_request_ok,%s,%s", this.OwnIp, this.OwnPort);
 		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
 	
@@ -223,8 +229,8 @@ public class Node {
 	 * @param port
 	 * @param timeStamp
 	 */
-	public void receiveWordStringOK(String ip, int port, int timeStamp) {
-		System.out.println("Receive OK from " + port + " at " + timeStamp);
+	public void receiveWordStringOK(String ip, int port) {
+		System.out.println("Receive OK from " + port);
 		Node node = this.findNode(ip, port);
 		if (node == null) {
 			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
@@ -242,7 +248,7 @@ public class Node {
 			this.hasString = true;
 			System.out.println("In CS");
 			
-			this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort+ "," + timeStamp}, node.OwnIp, node.OwnPort);
+			this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort}, node.OwnIp, node.OwnPort);
 		}
 	}
 	
@@ -551,7 +557,7 @@ public class Node {
 			if (node != null) {
 				System.out.println("Send OK to " + node.OwnPort);
 				this.servicedNode = node;
-				this.sendWordStringOK(node, -1);
+				this.sendWordStringOK(node);
 			}
 		}
 	}
