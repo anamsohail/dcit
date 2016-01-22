@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class DistributedReadWrite {
 	private static final int WAIT_MIN = 1;
-	private static final int WAIT_MAX = 5;
+	private static final int WAIT_MAX = 10;
 	private final String WORDS[] = {"apple", "banana", "carrot", "date", "eggplant", "fig", "guava"};
 	private Random rand = new Random();
 
