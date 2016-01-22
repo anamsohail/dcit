@@ -34,6 +34,8 @@ public class Incomming implements Runnable {
 			else {
 				System.out.println("Node already in network!");
 			}
+			
+			Global.node.isJoined = true;
 		}
 	}
 	
