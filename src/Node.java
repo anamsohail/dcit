@@ -278,18 +278,25 @@ public class Node {
 	}
 
 	/**
-	 * Called when a node receives the word string
-	 * from the master node.
-	 * 
-	 * Allows code in Node::getMasterString to proceed.
+	 * Called when a node receives the word string from another node.
 	 * 
 	 * @param wordString
 	 */
 	public void receiveWordString(String wordString) {
-		if (!this.isMasterNode()) {
+		if (this.isMasterNode()) {
+			this.wordString = wordString;
+			this.hasString = true;
+			
+			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+				System.out.println("Finished servicing " + this.servicedNode);
+				this.servicedNode = null;
+				this.checkRequestQueue();
+			}
+		} else {
 			if (this.awaitingFinalString) {
 				this.distReadWrite.checkFinalString(wordString);
 			} else {
+				// Add a random word to the string, and send it back to the master node.
 				System.out.println("old string: " + wordString);
 				wordString = this.distReadWrite.appendRandomWord(wordString);
 	
@@ -301,23 +308,17 @@ public class Node {
 				this.nextRequestTime += seconds;
 				
 				if (this.algorithm == Algorithm.RICART_AGRAWALA) {
-					this.requestQueue.clear();
+					
+					// Give up ownership of the word string.
 					this.hasString = false;
 					
 					if (this.nextRequestTime < 20) {
-					this.requestAllForWordString(this.nextRequestTime);
+						// Make the next request.
+						this.requestAllForWordString(this.nextRequestTime);
 					} else {
 						System.out.println("Done");
 					}
 				}
-			}
-		} else {
-			this.wordString = wordString;
-			this.hasString = true;
-			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
-				System.out.println("Finished servicing " + this.servicedNode);
-				this.servicedNode = null;
-				this.checkRequestQueue();
 			}
 		}
 	}
