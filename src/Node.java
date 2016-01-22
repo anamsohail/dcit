@@ -21,14 +21,14 @@ public class Node {
 	XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
-	public Thread timer = new Thread(new Timer());
+	private Thread timer;
 	public List<String> appended = new ArrayList<String>();
-	public int nextRequestTime = -1;
+	public int nextRequestTime;
 	public Algorithm algorithm;
 	private static String USAGE = "Usage: Node.java <port>";
-	private boolean isJoined = false;
-	private Node masterNode = this; // TODO: Elect master node using bully algorithm.
-	private String wordString = "";
+	public boolean isJoined = false;
+	private Node masterNode;
+	private String wordString;
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
@@ -164,6 +164,11 @@ public class Node {
 			System.out.println("You must join a network before you can start.");
 			return;
 		}
+		
+		if (this.masterNode == null) {
+			System.out.println("You need to elect a master node first.");
+			return;
+		}
 		String send = "start,"+algorithm.ordinal();
 		Object[] sendObject = new Object[] {send};
 		for (Node node : nodes) {
@@ -178,6 +183,15 @@ public class Node {
 	public void start(Algorithm algorithm){
 		System.out.println("Starting with algorithm: " + algorithm);
 		this.algorithm = algorithm;
+		// Reset values used during the distributed read/write
+		this.nextRequestTime = -1;
+		this.wordString = "";
+		this.servicedNode = null;
+		this.appended.clear();
+		this.requestQueue.clear();
+		this.doneNodes.clear();
+		this.timer = new Thread(new Timer());
+		
 		if (this.masterNode.equals(this)) {
 			this.timer.start();
 		} else {
