@@ -29,10 +29,12 @@ public class Node {
 	private Node masterNode;
 	private String wordString;
 	private Queue<Node> requestQueue = new LinkedList<Node>();
+	private Queue<Node> responseQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
 	private DistributedReadWrite distReadWrite = new DistributedReadWrite();
 	public boolean awaitingFinalString;
+	private boolean hasString;
 
 	/**
 	 * Initializes New Node
@@ -187,6 +189,7 @@ public class Node {
 		// Reset values used during the distributed read/write
 		this.nextRequestTime = -1;
 		this.wordString = "";
+		this.hasString = this.masterNode.equals(this);
 		this.servicedNode = null;
 		this.awaitingFinalString = false;
 		this.requestQueue.clear();
@@ -195,20 +198,101 @@ public class Node {
 		this.timer = new Thread(new Timer());
 		
 		if (this.masterNode.equals(this)) {
-			this.timer.start();
+			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+				this.timer.start();
+			}
 		} else {
 			this.nextRequestTime = this.distReadWrite.getRandomWaitingTime();
 			System.out.println("Waiting for " + this.nextRequestTime + " seconds");
+			
+			if (this.algorithm == Algorithm.RICART_AGRAWALA) {
+				this.requestMasterString(this.nextRequestTime);
+			}
 		}
 	}
+	
+	private void requestMasterString(int timeStamp) {
+		for (Node node : this.nodes) {
+			this.requestWordString(node, timeStamp);
+		}
+	}
+	
+	public void receiveWordStringRequest(String ip, int port, int timeStamp) {
+		Node node = this.findNode(ip, port);
+		if (node == null) {
+			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
+		}
+		
+		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+			if (this.masterNode.equals(this)) {
+				System.out.println("Receive request from " + node);
+				this.requestQueue.add(node);
+				this.checkRequestQueue();
+			}
+		} else if (this.algorithm == Algorithm.RICART_AGRAWALA) {
+			System.out.println("receive REQUEST from " + port + " at " + timeStamp);
+			if ((!this.masterNode.equals(this) && (this.hasString || timeStamp >= this.nextRequestTime))) {
+				System.out.println("queueing request from " + port);
+				this.requestQueue.add(node);
+			} else {
+				this.sendWordStringOK(node, timeStamp);
+			}
+		}
+	}
+	
+	private void sendWordStringOK(Node node, int timeStamp) {
+		System.out.println("Send OK to " + node.OwnPort);
+		String send = String.format("str_request_ok,%s,%s,%d", this.OwnIp, this.OwnPort, timeStamp);
+		Object[] sendObject = new Object[] { send };
+
+		this.toSend(node.OwnIp, node.OwnPort);
+		try {
+			sender.execute("receiver.strRequestOk", sendObject);
+		} catch (XmlRpcException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void receiveRequestResponse(String ip, int port, int timeStamp) {
+		System.out.println("Receive OK from " + port + " at " + timeStamp);
+		Node node = this.findNode(ip, port);
+		if (node == null) {
+			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
+		}
+		
+		if (this.requestQueue.contains(node)) {
+			new Exception("Duplicate node " + node).printStackTrace();
+		}
+		
+		this.requestQueue.add(node);
+		if (this.requestQueue.size() == this.nodes.size()) {
+			this.requestQueue.clear();
+			this.hasString = true;
+			System.out.println("In CS");
+			
+			this.toSend(node.OwnIp, node.OwnPort);
+			try {
+				sender.execute("receiver.strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort+ "," + timeStamp});
+			} catch (XmlRpcException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+	
 	/**
 	 * Requests for the master node's word string.
 	 * 
 	 * @return the master node's word string.
 	 */
-	public void requestMasterString() {
-		String send="str_request,"+this.OwnIp+","+this.OwnPort;
-		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
+	public void requestWordString(Node node, int timeStamp) {
+		if (this.algorithm == Algorithm.RICART_AGRAWALA)  {
+			System.out.println("REQUEST to " + node.OwnPort + " for " + timeStamp);
+		}
+		
+		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
+		this.toSend(node.OwnIp, node.OwnPort);
 		Object[] sendObject = new Object[] {send};
 		try {
 			sender.execute("receiver.strRequest", sendObject);
@@ -227,27 +311,6 @@ public class Node {
 		this.sendWordString(value, this.masterNode);
 	}
 
-	/**
-	 * Send this node's word string to the specified address.
-	 * 
-	 * @param ip
-	 * @param port
-	 */
-	public void sendWordString(String ip, int port) {
-		Node node = this.findNode(ip, port);
-		if (node != null) {
-			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION && this.masterNode.equals(this)) {
-				System.out.println("Receive request from " + node);
-				this.requestQueue.add(node);
-				this.checkRequestQueue();
-			} else {
-				this.sendWordString(this.wordString, node);
-			}
-		} else {
-			Exception e = new Exception("Node not found: " + ip + ":" + port);
-			e.printStackTrace();
-		}
-	}
 
 	public void sendFinalString(String ip, int port) {
 		Node node = this.findNode(ip, port);
@@ -274,7 +337,6 @@ public class Node {
 	 */
 	public void receiveWordString(String wordString) {
 		if (!this.masterNode.equals(this)) {
-
 			if (this.awaitingFinalString) {
 				this.distReadWrite.checkFinalString(wordString);
 			} else {
@@ -287,15 +349,24 @@ public class Node {
 				int seconds = this.distReadWrite.getRandomWaitingTime();
 				System.out.println("Waiting for " + seconds + " seconds");
 				this.nextRequestTime += seconds;
+				
+				if (this.algorithm == Algorithm.RICART_AGRAWALA) {
+					this.requestQueue.clear();
+					this.hasString = false;
+					
+					if (this.nextRequestTime < 20) {
+					this.requestMasterString(this.nextRequestTime);
+					} else {
+						System.out.println("Done");
+					}
+				}
 			}
-		}
-		
-		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
-			if (this.masterNode.equals(this)) {
+		} else {
+			this.wordString = wordString;
+			this.hasString = true;
+			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
 				System.out.println("Finished servicing " + this.servicedNode);
-				this.wordString = wordString;
 				this.servicedNode = null;
-
 				this.checkRequestQueue();
 			}
 		}
@@ -428,6 +499,10 @@ public class Node {
 		System.out.println("Node not in list!");
 		return -1;
 	}
+	
+	public void sendWordString(String ip, int port) {
+		this.sendWordString(this.wordString, this.findNode(ip, port));
+	}
 
 	/**
 	 * Send a word string to the provided node.
@@ -520,21 +595,30 @@ public class Node {
 	}
 
 	private void checkRequestQueue() {
-		// Only the master node should run this code.
-		if (!this.masterNode.equals(this)) {
-			return;
-		}
-		if (this.servicedNode == null) {
-			Node node = this.requestQueue.poll();
-			if (node != null) {
-				System.out.println("Now servicing " + node);
-				this.servicedNode = node;
-				synchronized(this.wordString) {
-					this.sendWordString(this.wordString, node);
+		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+			// Only the master node should run this code.
+			if (!this.masterNode.equals(this)) {
+				return;
+			}
+			if (this.servicedNode == null) {
+				Node node = this.requestQueue.poll();
+				if (node != null) {
+					System.out.println("Now servicing " + node);
+					this.servicedNode = node;
+					synchronized(this.wordString) {
+						this.sendWordString(this.wordString, node);
+					}
 				}
+			} else {
+				System.out.println("Serviced node is not null: " + this.servicedNode);
 			}
 		} else {
-			System.out.println("Serviced node is not null: " + this.servicedNode);
+			Node node = this.requestQueue.poll();
+			if (node != null) {
+				System.out.println("Send OK to " + node.OwnPort);
+				this.servicedNode = node;
+				this.sendWordStringOK(node, -1);
+			}
 		}
 	}
 

@@ -8,7 +8,11 @@ public class TimeAdvanceGrant implements Runnable {
 		}
 		
 		@Override
-		public void run() {			
+		public void run() {
+			if (this.node.algorithm == Algorithm.RICART_AGRAWALA) {
+				return;
+			}
+			
 			System.out.println("Time: " + this.logicalTime);
 			
 			if (this.logicalTime == 20) {
@@ -18,7 +22,7 @@ public class TimeAdvanceGrant implements Runnable {
 			}
 			
 			if (this.node.nextRequestTime == this.logicalTime) {
-				this.node.requestMasterString();
+				this.node.requestWordString(this.node.getMasterNode(), this.logicalTime);
 			}
 		}
 	}

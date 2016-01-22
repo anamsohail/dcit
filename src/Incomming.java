@@ -137,8 +137,27 @@ public class Incomming implements Runnable {
 		String function= token.nextToken();
 		if (function.equals("str_request")) {
 			String ip = token.nextToken();
-			String port = token.nextToken();
-			Global.node.sendWordString(ip, Integer.valueOf(port));
+			int port = Integer.valueOf(token.nextToken());
+			int timeStamp = Integer.valueOf(token.nextToken());
+			Global.node.receiveWordStringRequest(ip, port, timeStamp);
+		}
+	}
+	
+	public void strRequestMaster(String msg) {
+		StringTokenizer token = new StringTokenizer(msg,",");
+		String ip = token.nextToken();
+		int port = Integer.valueOf(token.nextToken());
+		Global.node.sendWordString(ip, port);
+	}
+	
+	public void strRequestOk(String msg) {
+		StringTokenizer token=new StringTokenizer(msg,",");
+		String function= token.nextToken();
+		if (function.equals("str_request_ok")) {
+			String ip = token.nextToken();
+			int port = Integer.valueOf(token.nextToken());
+			int timeStamp = Integer.valueOf(token.nextToken());
+			Global.node.receiveRequestResponse(ip, port, timeStamp);
 		}
 	}
 	
