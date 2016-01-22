@@ -147,7 +147,7 @@ public class Node {
 		this.requestQueue.clear();
 		this.doneNodes.clear();
 		this.distReadWrite.reset();
-		this.timer = new Thread(new Timer());
+		this.timer = new Thread(new Timer(this));
 		
 		if (this.isMasterNode()) {
 			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
@@ -557,23 +557,5 @@ public class Node {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}	
-	}
-
-	public class Timer implements Runnable {
-		@Override
-		public void run() {
-			long timeEnd = System.currentTimeMillis() + (20 * 1000);
-			int logicalTime = 0;
-			while (System.currentTimeMillis() < timeEnd) {
-				try {
-					Thread.sleep(1000);
-					logicalTime += 1;
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.println("Advance time to: " + logicalTime);
-				Node.this.sendTimeAdvance(logicalTime);
-			}
-		}
 	}
 }
