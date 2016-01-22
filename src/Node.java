@@ -22,7 +22,6 @@ public class Node {
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
 	private Thread timer;
-	public List<String> appended = new ArrayList<String>();
 	public int nextRequestTime;
 	public Algorithm algorithm;
 	private static String USAGE = "Usage: Node.java <port>";
@@ -32,6 +31,8 @@ public class Node {
 	private Queue<Node> requestQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
+	private DistributedReadWrite distReadWrite = new DistributedReadWrite();
+	public boolean awaitingFinalString;
 
 	/**
 	 * Initializes New Node
@@ -187,36 +188,33 @@ public class Node {
 		this.nextRequestTime = -1;
 		this.wordString = "";
 		this.servicedNode = null;
-		this.appended.clear();
+		this.awaitingFinalString = false;
 		this.requestQueue.clear();
 		this.doneNodes.clear();
+		this.distReadWrite.reset();
 		this.timer = new Thread(new Timer());
 		
 		if (this.masterNode.equals(this)) {
 			this.timer.start();
 		} else {
-			new TimeAdvanceGrant(this, 0).run();
+			this.nextRequestTime = this.distReadWrite.getRandomWaitingTime();
+			System.out.println("Waiting for " + this.nextRequestTime + " seconds");
 		}
 	}
 	/**
-	 * Gets the master node's word string.
+	 * Requests for the master node's word string.
 	 * 
 	 * @return the master node's word string.
 	 */
-	public String getMasterString() {
+	public void requestMasterString() {
 		String send="str_request,"+this.OwnIp+","+this.OwnPort;
 		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
 		Object[] sendObject = new Object[] {send};
 		try {
 			sender.execute("receiver.strRequest", sendObject);
-			// Wait for updated value (see Node::unlockWordString).
-			synchronized(this.wordString) {
-				this.wordString.wait();
-			}
-			return this.wordString;
-		} catch (XmlRpcException e) {e.printStackTrace();
-		} catch (InterruptedException e) {e.printStackTrace();}
-		return null;
+		} catch (XmlRpcException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -272,40 +270,47 @@ public class Node {
 	 * 
 	 * Allows code in Node::getMasterString to proceed.
 	 * 
-	 * @param value
+	 * @param wordString
 	 */
-	public void unlockWordString(String value) {
-		synchronized(this.wordString) {
-			this.wordString.notify();
-			this.wordString = value;
-		}
+	public void receiveWordString(String wordString) {
+		if (!this.masterNode.equals(this)) {
 
+			if (this.awaitingFinalString) {
+				this.distReadWrite.checkFinalString(wordString);
+			} else {
+				System.out.println("old string: " + wordString);
+				wordString = this.distReadWrite.appendRandomWord(wordString);
+	
+				this.sendWordStringToMaster(wordString);
+				System.out.println("new string: " + wordString);
+				
+				int seconds = this.distReadWrite.getRandomWaitingTime();
+				System.out.println("Waiting for " + seconds + " seconds");
+				this.nextRequestTime += seconds;
+			}
+		}
+		
 		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
 			if (this.masterNode.equals(this)) {
 				System.out.println("Finished servicing " + this.servicedNode);
-				synchronized (this.servicedNode) {
-					this.servicedNode = null;
-				}
+				this.wordString = wordString;
+				this.servicedNode = null;
 
 				this.checkRequestQueue();
 			}
 		}
 	}
 
-	public String requestFinalString(){
+	public void requestFinalString(){
+		System.out.println("Requesting final string");
 		String send = "str_request_final,"+this.OwnIp+","+this.OwnPort;
 		toSend(this.masterNode.OwnIp, this.masterNode.OwnPort);
 		Object[] sendObject = new Object[] {send};
 		try {
 			sender.execute("receiver.strRequestFinal", sendObject);
-			// Wait for updated value (see Node::unlockWordString).
-			synchronized(this.wordString) {
-				this.wordString.wait();
-			}
-			return this.wordString;
-		} catch (XmlRpcException e) {e.printStackTrace();
-		} catch (InterruptedException e) {e.printStackTrace();}
-		return null;
+		} catch (XmlRpcException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

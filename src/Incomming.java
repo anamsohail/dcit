@@ -168,7 +168,7 @@ public class Incomming implements Runnable {
 		String function= token.nextToken();
 		if (function.equals("str_update")) {
 			String wordString = token.hasMoreTokens() ? token.nextToken() : "";
-			Global.node.unlockWordString(wordString);
+			Global.node.receiveWordString(wordString);
 		}
 	}
 	
