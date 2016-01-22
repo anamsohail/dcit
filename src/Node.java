@@ -252,14 +252,23 @@ public class Node {
 		
 		// We have access to the word string if all nodes respond with "OK"
 		if (this.requestQueue.size() == this.nodes.size()) {
-			this.requestQueue.clear();
 			this.hasString = true;
 			System.out.println("/// Entering Critical Section \\\\\\");
 		}
 	}
 	
-	
-	
+	public void getWordStringFromMaster() {
+		if (this.algorithm == Algorithm.RICART_AGRAWALA) {
+			if (this.requestQueue.size() != this.nodes.size()) {
+				System.out.println("ERROR: Did not receive OK from all nodes!");
+			}
+			
+			this.requestQueue.clear();
+		}
+		
+		this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort}, this.masterNode);
+	}
+
 	/**
 	 * Requests for the master node's word string.
 	 * 

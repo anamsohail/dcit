@@ -18,7 +18,7 @@ public class TimeAdvanceGrant implements Runnable {
 			}
 			
 			if (this.node.nextRequestTime == this.logicalTime) {
-				this.node.sender.execute("strRequestMaster", new Object[] { this.node.OwnIp + "," + this.node.OwnPort}, this.node.getMasterNode());
+				this.node.getWordStringFromMaster();
 			}
 		}
 	}
