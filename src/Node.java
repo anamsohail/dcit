@@ -22,6 +22,7 @@ public class Node {
 	private Node masterNode;
 	private String wordString;
 	private Queue<Node> requestQueue = new LinkedList<Node>();
+	private Queue<Request> requestQueueRA = new LinkedList<Request>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
 	private DistributedReadWrite distReadWrite = new DistributedReadWrite();
@@ -137,6 +138,8 @@ public class Node {
 
 	public void start(Algorithm algorithm){
 		System.out.println("Starting with algorithm: " + algorithm);
+		System.out.println(this);
+		System.out.println("------------");
 		this.algorithm = algorithm;
 		// Reset values used during the distributed read/write
 		this.nextRequestTime = -1;
@@ -145,6 +148,7 @@ public class Node {
 		this.servicedNode = null;
 		this.awaitingFinalString = false;
 		this.requestQueue.clear();
+		this.requestQueueRA.clear();
 		this.doneNodes.clear();
 		this.distReadWrite.reset();
 		this.timer = new Thread(new Timer(this));
@@ -195,16 +199,21 @@ public class Node {
 			}
 		} else if (this.algorithm == Algorithm.RICART_AGRAWALA) {
 			
-			System.out.println("receive REQUEST from " + port + " at " + timeStamp);
+			System.out.println("receive REQUEST from " + node + " at " + timeStamp);
 			if (this.isMasterNode()) {
 				this.sendWordStringOK(node);
 			} else {
-				boolean hasPriority = (this.nextRequestTime < timeStamp) || (this.nextRequestTime == timeStamp && this.ID < node.ID);
-				if (this.hasString || hasPriority) {
-					System.out.println("Queue Request from " + port);
-					this.requestQueue.add(node);
+				if (this.hasString) {
+					System.out.println("I have the string. Queue Request from " + node);
+					this.requestQueueRA.add(new Request(node, timeStamp));
 				} else {
-					this.sendWordStringOK(node);
+					Request request = new Request(node, timeStamp);
+					if (this.hasPriority(request)) {
+						System.out.println("I have higher priority over " + node + ". Queueing.");
+						this.requestQueueRA.add(request);
+					} else {
+						this.sendWordStringOK(node);
+					}
 				}
 			}
 		}
@@ -217,7 +226,7 @@ public class Node {
 	 * @param timeStamp
 	 */
 	private void sendWordStringOK(Node node) {
-		System.out.println("Send OK to " + node.OwnPort);
+		System.out.println("Send OK to " + node);
 		String send = String.format("str_request_ok,%s,%s", this.OwnIp, this.OwnPort);
 		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
@@ -230,7 +239,6 @@ public class Node {
 	 * @param timeStamp
 	 */
 	public void receiveWordStringOK(String ip, int port) {
-		System.out.println("Receive OK from " + port);
 		Node node = this.findNode(ip, port);
 		if (node == null) {
 			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
@@ -239,6 +247,8 @@ public class Node {
 		if (this.requestQueue.contains(node)) {
 			new Exception("Duplicate node " + node).printStackTrace();
 		}
+		
+		System.out.println("Receive OK from " + node);
 		
 		this.requestQueue.add(node);
 		
@@ -261,7 +271,7 @@ public class Node {
 	 */
 	public void requestWordString(Node node, int timeStamp) {
 		if (this.algorithm == Algorithm.RICART_AGRAWALA)  {
-			System.out.println("REQUEST to " + node.OwnPort + " for " + timeStamp);
+			System.out.println("REQUEST to " + node + " for " + timeStamp);
 		}
 		
 		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
@@ -320,6 +330,8 @@ public class Node {
 					
 					if (this.nextRequestTime < 20) {
 						// Make the next request.
+						this.checkRequestQueue();		
+						System.out.println("REQUEST " + this.nextRequestTime);				
 						this.requestAllForWordString(this.nextRequestTime);
 					} else {
 						System.out.println("Done");
@@ -327,6 +339,10 @@ public class Node {
 				}
 			}
 		}
+	}
+	
+	private boolean hasPriority(Request request) {
+		return ((this.nextRequestTime < request.timeStamp) || (this.nextRequestTime == request.timeStamp && this.ID < request.node.ID));
 	}
 
 	public void requestFinalString(){
@@ -411,6 +427,10 @@ public class Node {
 			}
 		}
 		return ID;
+	}
+	
+	public String toString() {
+		return "[" + String.valueOf(this.ID) + "]";
 	}
 
 	/**
@@ -553,11 +573,13 @@ public class Node {
 				System.out.println("Serviced node is not null: " + this.servicedNode);
 			}
 		} else {
-			Node node = this.requestQueue.poll();
-			if (node != null) {
-				System.out.println("Send OK to " + node.OwnPort);
-				this.servicedNode = node;
-				this.sendWordStringOK(node);
+			Request request = this.requestQueueRA.peek();
+			if (request != null) {
+				if (!this.hasPriority(request)) {
+					this.requestQueueRA.poll();
+					System.out.println("Send OK to " + request.node);
+					this.sendWordStringOK(request.node);
+				}
 			}
 		}
 	}

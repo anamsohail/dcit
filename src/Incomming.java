@@ -133,6 +133,7 @@ public class Incomming implements Runnable {
 	}
 	
 	public void strRequest(String msg) {
+		System.out.println("strRequest");
 		StringTokenizer token=new StringTokenizer(msg,",");
 		String function= token.nextToken();
 		if (function.equals("str_request")) {
