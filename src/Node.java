@@ -197,7 +197,7 @@ public class Node {
 			}
 		} else if (this.algorithm == Algorithm.RICART_AGRAWALA) {
 			
-			System.out.println("receive REQUEST from " + node + " at " + timeStamp);
+			System.out.println("REQUEST from " + node + " at " + timeStamp);
 			if (this.isMasterNode()) {
 				this.sendWordStringOK(node);
 			} else {
@@ -224,7 +224,7 @@ public class Node {
 	 * @param timeStamp
 	 */
 	private void sendWordStringOK(Node node) {
-		System.out.println("Send OK to " + node);
+		System.out.println("OK to " + node);
 		String send = String.format("str_request_ok,%s,%s", this.OwnIp, this.OwnPort);
 		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
@@ -254,6 +254,7 @@ public class Node {
 		if (this.requestQueue.size() == this.nodes.size()) {
 			this.requestQueue.clear();
 			this.hasString = true;
+			System.out.println("/// Entering Critical Section \\\\\\");
 		}
 	}
 	
@@ -268,7 +269,7 @@ public class Node {
 		if (this.algorithm == Algorithm.RICART_AGRAWALA)  {
 			System.out.println("REQUEST to " + node + " for " + timeStamp);
 		}
-		System.out.println(node.OwnIp + ":" + node.OwnPort);
+		
 		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
 		this.sender.execute("strRequest", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
@@ -295,6 +296,7 @@ public class Node {
 	 */
 	public void receiveWordString(String wordString) {
 		if (this.isMasterNode()) {
+			System.out.println("Updated word string: " + wordString);
 			this.wordString = wordString;
 			this.hasString = true;
 			
@@ -569,10 +571,13 @@ public class Node {
 			}
 		} else {
 			Request request = this.requestQueueRA.peek();
-			if (request != null) {
+			if (request == null) {
+				System.out.println("\\\\\\ Exiting Critical Section ///");
+			} else {
 				if (!this.hasPriority(request)) {
 					this.requestQueueRA.poll();
-					System.out.println("Send OK to " + request.node);
+					System.out.println("\\\\\\ Exiting Critical Section ///");
+					System.out.println("OK to " + request.node);
 					this.sendWordStringOK(request.node);
 				}
 			}
