@@ -141,7 +141,7 @@ public class Node {
 		// Reset values used during the distributed read/write
 		this.nextRequestTime = -1;
 		this.wordString = "";
-		this.hasString = this.masterNode.equals(this);
+		this.hasString = this.isMasterNode();
 		this.servicedNode = null;
 		this.awaitingFinalString = false;
 		this.requestQueue.clear();
@@ -149,7 +149,7 @@ public class Node {
 		this.distReadWrite.reset();
 		this.timer = new Thread(new Timer());
 		
-		if (this.masterNode.equals(this)) {
+		if (this.isMasterNode()) {
 			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
 				this.timer.start();
 			}
@@ -176,14 +176,14 @@ public class Node {
 		}
 		
 		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
-			if (this.masterNode.equals(this)) {
+			if (this.isMasterNode()) {
 				System.out.println("Receive request from " + node);
 				this.requestQueue.add(node);
 				this.checkRequestQueue();
 			}
 		} else if (this.algorithm == Algorithm.RICART_AGRAWALA) {
 			System.out.println("receive REQUEST from " + port + " at " + timeStamp);
-			if ((!this.masterNode.equals(this) && (this.hasString || timeStamp >= this.nextRequestTime))) {
+			if ((!this.isMasterNode() && (this.hasString || timeStamp >= this.nextRequestTime))) {
 				System.out.println("queueing request from " + port);
 				this.requestQueue.add(node);
 			} else {
@@ -235,17 +235,6 @@ public class Node {
 		this.sender.execute("strRequest", new Object[] { send }, node.OwnIp, node.OwnPort);
 	}
 
-	/**
-	 * Called by the node that has finished adding a new word
-	 * to the word string.
-	 * 
-	 * @param value
-	 */
-	public void sendWordStringToMaster(String value){
-		this.sendWordString(value, this.masterNode);
-	}
-
-
 	public void sendFinalString(String ip, int port) {
 		Node node = this.findNode(ip, port);
 		if (node != null) {
@@ -270,14 +259,14 @@ public class Node {
 	 * @param wordString
 	 */
 	public void receiveWordString(String wordString) {
-		if (!this.masterNode.equals(this)) {
+		if (!this.isMasterNode()) {
 			if (this.awaitingFinalString) {
 				this.distReadWrite.checkFinalString(wordString);
 			} else {
 				System.out.println("old string: " + wordString);
 				wordString = this.distReadWrite.appendRandomWord(wordString);
 	
-				this.sendWordStringToMaster(wordString);
+				this.sendWordString(wordString, this.masterNode);
 				System.out.println("new string: " + wordString);
 				
 				int seconds = this.distReadWrite.getRandomWaitingTime();
@@ -431,6 +420,10 @@ public class Node {
 	public void sendWordString(String ip, int port) {
 		this.sendWordString(this.wordString, this.findNode(ip, port));
 	}
+	
+	public boolean isMasterNode() {
+		return this.isMasterNode();
+	}
 
 	/**
 	 * Send a word string to the provided node.
@@ -484,7 +477,7 @@ public class Node {
 	 * Tells all nodes to move their logical clocks one step forward.
 	 */
 	public void sendTimeAdvance(int logicalTime) {
-		if (!this.masterNode.equals(this)) {
+		if (!this.isMasterNode()) {
 			return;
 		}
 		
@@ -510,7 +503,7 @@ public class Node {
 	private void checkRequestQueue() {
 		if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
 			// Only the master node should run this code.
-			if (!this.masterNode.equals(this)) {
+			if (!this.isMasterNode()) {
 				return;
 			}
 			if (this.servicedNode == null) {
