@@ -22,7 +22,6 @@ public class Node {
 	private Node masterNode;
 	private String wordString;
 	private Queue<Node> requestQueue = new LinkedList<Node>();
-	private Queue<Node> responseQueue = new LinkedList<Node>();
 	private List<Node> doneNodes = new ArrayList<Node>();
 	private Node servicedNode = null;
 	private DistributedReadWrite distReadWrite = new DistributedReadWrite();
