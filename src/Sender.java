@@ -12,7 +12,7 @@ public class Sender {
 
 	private XmlRpcClient sender = new XmlRpcClient();
 	private XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
-	
+
 	/**
 	 * Tells the given node to execute a method with particular parameters.
 	 * 
@@ -23,7 +23,7 @@ public class Sender {
 	public void execute(String method, Object[] params, Node node) {
 		this.execute(method, params, node.OwnIp, node.OwnPort);
 	}
-	
+
 	/**
 	 * Tells the given address to execute a method with particular parameters.
 	 * 
@@ -33,11 +33,14 @@ public class Sender {
 	 */
 	public void execute(String method, Object[] params, String destIP, int destPort) {
 		try {
-			config.setServerURL(new URL("http://" + destIP + ":" + destPort));
-		} catch (MalformedURLException e) {e.printStackTrace();}
-		config.setEnabledForExtensions(true);
-		sender.setConfig(config);
+			this.config.setServerURL(new URL("http://" + destIP + ":" + destPort));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
 		
+		this.config.setEnabledForExtensions(true);
+		this.sender.setConfig(config);
+
 		try {
 			this.sender.execute(String.format("receiver.%s", method), params);
 		} catch (XmlRpcException e) {
