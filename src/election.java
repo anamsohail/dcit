@@ -1,13 +1,20 @@
 
 public class election implements Runnable {
+	
+	private Node node;
+
+	public election(Node node) {
+		this.node = node;
+	}
+	
 	@Override
 	public void run() {
-		if(Global.node.nodes.size()>0) {//send to higher IDs
+		if(this.node.nodes.size()>0) {//send to higher IDs
 			boolean higher = true;
-			for (Node node : Global.node.nodes) {
-				if (node.ID > Global.node.ID) {
+			for (Node node : this.node.nodes) {
+				if (node.ID > this.node.ID) {
 					higher = false;
-					Global.node.sender.execute("election", new Object[] { Global.node.OwnIp, Global.node.OwnPort, Global.node.ID }, node.OwnIp, node.OwnPort);
+					this.node.sender.execute("election", new Object[] { this.node.OwnIp, this.node.OwnPort, this.node.ID }, node.OwnIp, node.OwnPort);
 				}
 			}
 			
@@ -19,25 +26,25 @@ public class election implements Runnable {
 					} catch (InterruptedException e) {e.printStackTrace();}
 					System.out.println("sleeping...");
 				}
-				if(Global.node.responded==true) {
+				if(this.node.responded==true) {
 					System.out.println("I lost the election!");
 					//this.responded=false;
 				}
 				else {
 					System.out.println("No response. I'm the Winner!");
-					Global.node.setMasterNode(Global.node);
-					Global.node.advert();
+					this.node.setMasterNode(this.node);
+					this.node.advert();
 				}
 			}
 			else{//higher...send message to network declaring yourself winner
 				System.out.println("Highest ID. I'm the Winner!");
-				Global.node.setMasterNode(Global.node);
-				Global.node.advert();
+				this.node.setMasterNode(this.node);
+				this.node.advert();
 			}
 		}
 		else {
 			System.out.println("No nodes connected. Setting self to master node");
-			Global.node.setMasterNode(Global.node);
+			this.node.setMasterNode(this.node);
 		}		
 	}
 }

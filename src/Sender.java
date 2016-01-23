@@ -9,7 +9,7 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
  * Class responsible for sending messages across nodes.
  */
 public class Sender {
-
+	
 	private XmlRpcClient sender = new XmlRpcClient();
 	private XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 

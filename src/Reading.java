@@ -4,6 +4,13 @@ import java.util.StringTokenizer;
 
 
 public class Reading implements Runnable {
+	
+	private Node node;
+
+	public Reading(Node node) {
+		this.node = node;
+	}
+	
 	@Override
 	public void run(){
 		try{
@@ -19,8 +26,8 @@ public class Reading implements Runnable {
 					}
 					String IP = st.nextToken();
 					int port = Integer.parseInt(new String(st.nextToken()));
-					int myPort = Global.node.OwnPort;
-					Global.node.join(IP, port, myPort);
+					int myPort = this.node.OwnPort;
+					this.node.join(IP, port, myPort);
 				} 
 				else if (s.toUpperCase().equals("START")) {
 					if (st.countTokens() != 1) {
@@ -30,18 +37,18 @@ public class Reading implements Runnable {
 					
 					String algorithm = st.nextToken();
 					if (algorithm.toUpperCase().equals("CME")) {
-						Global.node.sendStart(Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
+						this.node.sendStart(Algorithm.CENTRALIZED_MUTUAL_EXCLUSION);
 					} else if (algorithm.toUpperCase().equals("RA")) {
-						Global.node.sendStart(Algorithm.RICART_AGRAWALA);
+						this.node.sendStart(Algorithm.RICART_AGRAWALA);
 					} else {
 						System.out.println("Usage: start <algorithm (CME or RA)>");
 					}
 				}
 				else if (s.toUpperCase().equals("ELECTION")) {
-					Global.node.election();
+					this.node.election();
 				}	
 				else if(s.toUpperCase().equals("SIGN")) {
-					Global.node.signOff();
+					this.node.signOff();
 					System.exit(0);
 				}
 				else {

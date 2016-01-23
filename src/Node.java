@@ -516,7 +516,7 @@ public class Node {
 	}
 
 	public void election(){
-		election elect = new election();
+		election elect = new election(this);
 		new Thread(elect).start();
 	}
 
@@ -597,13 +597,16 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Global.node = new Node();
-				Global.node.create(matcher.group(1), port);
-				Incomming p=new Incomming();
-				new Thread(p).start();
-				Reading q = new Reading();
-				new Thread(q).start();
-				Global.node.Display();
+				Node node = new Node();
+				node.create(matcher.group(1), port);
+				Incomming.NODE = node;
+				new Thread(new Incomming()).start();
+				new Thread(new Reading(node)).start();
+				node.Display();
+			}
+			
+			while (true) {
+				// Do nothing.
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();

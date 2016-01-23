@@ -4,37 +4,38 @@ import org.apache.xmlrpc.server.XmlRpcServerConfigImpl;
 import org.apache.xmlrpc.webserver.WebServer;
 
 public class Incomming implements Runnable {
+	public static Node NODE;
 	private Thread timeAdvanceGrant;
 	
 	public void join(String ip, int port, String senderIP, String senderPORT, int sID) {
-		if(!Global.node.checkInList(senderIP, String.valueOf(senderPORT))) {
-			int newID = Global.node.checkID(sID);
+		if(!NODE.checkInList(senderIP, String.valueOf(senderPORT))) {
+			int newID = NODE.checkID(sID);
 			if(sID==newID) {
 				System.out.println("ID unique...joining node!");
 			}
 			else {
 				System.out.println("ID wasn't unique. Sending new ID to new node!");
-				Global.node.sendIDtoNewNode(senderIP, senderPORT, newID);
+				NODE.sendIDtoNewNode(senderIP, senderPORT, newID);
 			}
 			System.out.println("joined: "+senderIP+","+senderPORT);
-			Global.node.sendToAll(senderIP,senderPORT,newID);
+			NODE.sendToAll(senderIP,senderPORT,newID);
 		}
 		else {
 			System.out.println("Node already in network!");
 		}
 		
-		Global.node.isJoined = true;
+		NODE.isJoined = true;
 	}
 	
 	public void newID(int ID) {
 		System.out.println("changing my ID to: "+ID);
-		Global.node.ID = ID;
-		Global.node.Display();
+		NODE.ID = ID;
+		NODE.Display();
 	}
 	
 	public void newNode(String IP, int PORT, int sID) {
 		System.out.println("adding new node to List");
-		Global.node.addNodeToList(IP, PORT, sID);
+		NODE.addNodeToList(IP, PORT, sID);
 	}
 	
 	public void master (String masterIp, int masterPort, int masterID) {
@@ -42,67 +43,67 @@ public class Incomming implements Runnable {
 		master.OwnIp = masterIp;
 		master.OwnPort = masterPort;
 		master.ID = masterID;
-		Global.node.setMasterNode(master);
+		NODE.setMasterNode(master);
 	}
 	
 	public void ok(String ip, int port, int id) {
 		System.out.println("msg received: OK from "+ip+","+port+","+id);
-		Global.node.responded = true;
+		NODE.responded = true;
 	}
 	
 	public void election(String ip, int port, int id) {
 		System.out.println("msg received: ELECTION from "+ip+","+port+","+id);
-		if(id < Global.node.ID) {
-			Global.node.sendOK(ip, port);
+		if(id < NODE.ID) {
+			NODE.sendOK(ip, port);
 			System.out.println("My ID is higher so I'll start my own election!");
-			Global.node.election();
+			NODE.election();
 		}
 	}
 	
 	public void signOff(int senderID) {				
-		int index = Global.node.findNodeIndex(senderID);
+		int index = NODE.findNodeIndex(senderID);
 		if(index==-1) {
 			System.out.println("Node not in list. So no sign off!");
 		}
 		else {//remove node from list
-			Global.node.nodes.remove(index);
+			NODE.nodes.remove(index);
 			System.out.println("Node ID: "+senderID+" removed!");
 		}
 	}
 	
 	public void start(int algorithmOrdinal) {
-		Global.node.start(Algorithm.values()[Integer.valueOf(algorithmOrdinal)]);
+		NODE.start(Algorithm.values()[Integer.valueOf(algorithmOrdinal)]);
 	}
 	
 	public void strRequest(String ip, int port, int timeStamp) {
-		Global.node.receiveWordStringRequest(ip, port, timeStamp);
+		NODE.receiveWordStringRequest(ip, port, timeStamp);
 	}
 	
 	public void strRequestMaster(String ip, int port) {
-		Global.node.sendWordString(ip, port);
+		NODE.sendWordString(ip, port);
 	}
 	
 	public void strRequestOk(String ip, int port, int timeStamp) {
-		Global.node.receiveWordStringOK(ip, port, timeStamp);
+		NODE.receiveWordStringOK(ip, port, timeStamp);
 	}
 	
 	public void timeAdvance(int time) {
-		this.timeAdvanceGrant = new Thread(new TimeAdvanceGrant(Global.node, time));
+		this.timeAdvanceGrant = new Thread(new TimeAdvanceGrant(NODE, time));
 		this.timeAdvanceGrant.start();
 	}
 	
 	public void strRequestFinal(String ip, int port) {
-		Global.node.sendFinalString(ip, port);
+		NODE.sendFinalString(ip, port);
 	}
 	
 	public void strUpdate(String value) {
-		Global.node.receiveWordString(value);
+		NODE.receiveWordString(value);
 	}
 	
 	@Override
 	public void run() {
 		try{
-			WebServer webServer = new WebServer(Global.node.OwnPort);
+			WebServer webServer = new WebServer(NODE.OwnPort);
 			XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
 			PropertyHandlerMapping phm = new PropertyHandlerMapping();
 			phm.setVoidMethodEnabled(true);
