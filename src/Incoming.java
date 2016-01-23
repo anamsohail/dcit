@@ -3,7 +3,7 @@ import org.apache.xmlrpc.server.XmlRpcServer;
 import org.apache.xmlrpc.server.XmlRpcServerConfigImpl;
 import org.apache.xmlrpc.webserver.WebServer;
 
-public class Incomming implements Runnable {
+public class Incoming implements Runnable {
 	public static Node NODE;
 	private Thread timeAdvanceGrant;
 	
@@ -107,7 +107,7 @@ public class Incomming implements Runnable {
 			XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
 			PropertyHandlerMapping phm = new PropertyHandlerMapping();
 			phm.setVoidMethodEnabled(true);
-			phm.addHandler("receiver", Incomming.class);
+			phm.addHandler("receiver", Incoming.class);
 			xmlRpcServer.setHandlerMapping(phm);
 			XmlRpcServerConfigImpl serverConfig = (XmlRpcServerConfigImpl)
 					xmlRpcServer.getConfig();

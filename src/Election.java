@@ -1,9 +1,9 @@
 
-public class election implements Runnable {
+public class Election implements Runnable {
 	
 	private Node node;
 
-	public election(Node node) {
+	public Election(Node node) {
 		this.node = node;
 	}
 	
