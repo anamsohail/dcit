@@ -53,30 +53,20 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			String IpPort=ip+","+port+","+OwnIp+","+myPort+","+this.ID;
-			String send="join,"+IpPort;
-			this.sender.execute("join", new Object[] { send }, ip, port);
+			this.sender.execute("join", new Object[] { ip, port, this.OwnIp, String.valueOf(this.OwnPort), this.ID }, ip, port);
 			this.isJoined = true;
-			System.out.println("sent message: "+send);
 		}catch(Exception e ){e.printStackTrace();}	
 	}
 
 	public void sendIDtoNewNode(String ip, String port, int ID) {
-		String send="newID,"+String.valueOf(ID);
-		this.sender.execute("newID", new Object[] { send }, ip, Integer.parseInt(port));
-		System.out.println("sent message: "+send);
+		this.sender.execute("newID", new Object[] { ID }, ip, Integer.parseInt(port));
 	}
 
 	public void sendToAll(String ip, String port, int newID) {
 		if(nodes.size()>0) {
 			System.out.println("sending new node to all other nodes!");
-			for (int i = 0; i < nodes.size(); i++) {//send new node to already existing nodes
-				String IpPort=ip+","+port+","+String.valueOf(newID);
-				String send="new,"+IpPort;
-				String oldIP = nodes.get(i).OwnIp;
-				int oldPort = nodes.get(i).OwnPort;
-				this.sender.execute("newNode", new Object[] { send }, oldIP, oldPort);
-				System.out.println("sent message: "+send);
+			for (Node node : this.nodes) {
+				this.sender.execute("newNode", new Object[] { ip, Integer.parseInt(port), newID }, node.OwnIp, node.OwnPort);
 			}
 		}
 		sendListToNewNode(ip,port);
@@ -87,35 +77,16 @@ public class Node {
 	public void sendListToNewNode(String ip, String port) {
 		if(nodes.size()>0) {
 			System.out.println("sending list to new node!");
-			for (int i = 0; i < nodes.size(); i++) {//send nodes one by one to new node
-				String oldIP = nodes.get(i).OwnIp;
-				String oldPort = String.valueOf(nodes.get(i).OwnPort);
-				String oldID = String.valueOf(nodes.get(i).ID);
-				String IpPort=oldIP+","+oldPort+","+oldID;
-				String send="new,"+IpPort;
-				this.sender.execute("newNode", new Object[] { send }, ip, Integer.parseInt(port));
-				System.out.println("sent message: "+send);
+			for (Node node : this.nodes) {
+				this.sender.execute("newNode", new Object[] { node.OwnIp, node.OwnPort, node.ID }, ip, Integer.parseInt(port));
 			}
 		}
 		System.out.println("Sending my info to new node...");
-		String myIP = OwnIp;
-		String myPort = String.valueOf(OwnPort);
-		String myID = String.valueOf(ID);
-		String IpPort=myIP+","+myPort+","+myID;
-		String send="new,"+IpPort;
-		this.sender.execute("newNode", new Object[] { send }, ip, Integer.parseInt(port));
-		System.out.println("sent message: "+send);
+		this.sender.execute("newNode", new Object[] { this.OwnIp, this.OwnPort, this.ID }, ip, Integer.parseInt(port));
 	}
 
-	public void sendOK(String ip, String port) {
-
-		int PORT = Integer.parseInt(port);
-		String myIP = OwnIp;
-		String myPort = String.valueOf(OwnPort);
-		String myID = String.valueOf(ID);
-		String send="OK,"+myIP+","+myPort+","+myID;
-		this.sender.execute("ok", new Object[] { send }, ip, PORT);
-		System.out.println("sent message: "+send);
+	public void sendOK(String ip, int port) {
+		this.sender.execute("ok", new Object[] { this.OwnIp, this.OwnPort, this.ID }, ip, port);
 	}
 
 	/**
@@ -131,10 +102,11 @@ public class Node {
 			System.out.println("You need to elect a master node first.");
 			return;
 		}
-		String send = "start,"+algorithm.ordinal();
+
 		for (Node node : nodes) {
-			this.sender.execute("start", new Object[] { send }, node.OwnIp, node.OwnPort);
+			this.sender.execute("start", new Object[] { algorithm.ordinal() }, node.OwnIp, node.OwnPort);
 		}
+		
 		this.start(algorithm);
 	}
 
@@ -257,8 +229,7 @@ public class Node {
 	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
 		System.out.println("OK to " + node + " for " + timeStamp);
-		String send = String.format("str_request_ok,%s,%s", this.OwnIp, this.OwnPort);
-		this.sender.execute("strRequestOk", new Object[] { send, this.logicalTime}, node.OwnIp, node.OwnPort);
+		this.sender.execute("strRequestOk", new Object[] { this.OwnIp, this.OwnPort, this.logicalTime}, node.OwnIp, node.OwnPort);
 		this.logicalTime++;
 	}
 	
@@ -302,7 +273,7 @@ public class Node {
 			this.requestQueue.clear();
 		}
 		
-		this.sender.execute("strRequestMaster", new Object[] { this.OwnIp + "," + this.OwnPort}, this.masterNode);
+		this.sender.execute("strRequestMaster", new Object[] { this.OwnIp, this.OwnPort}, this.masterNode);
 	}
 
 	/**
@@ -315,8 +286,7 @@ public class Node {
 			System.out.println("REQUEST to " + node + " for " + timeStamp);
 		}
 		
-		String send="str_request,"+this.OwnIp+","+this.OwnPort+","+timeStamp;
-		this.sender.execute("strRequest", new Object[] { send }, node.OwnIp, node.OwnPort);
+		this.sender.execute("strRequest", new Object[] { this.OwnIp, this.OwnPort, timeStamp }, node.OwnIp, node.OwnPort);
 	}
 
 	public void sendFinalString(String ip, int port) {
@@ -396,8 +366,7 @@ public class Node {
 		}
 		
 		System.out.println("Requesting final string");
-		String send = "str_request_final,"+this.OwnIp+","+this.OwnPort;
-		this.sender.execute("strRequestFinal", new Object[] { send }, this.masterNode.OwnIp, this.masterNode.OwnPort);
+		this.sender.execute("strRequestFinal", new Object[] { this.OwnIp, this.OwnPort }, this.masterNode.OwnIp, this.masterNode.OwnPort);
 	}
 
 	/**
@@ -532,8 +501,7 @@ public class Node {
 	 * Send a word string to the provided node.
 	 */
 	private void sendWordString(String value, Node destination) {
-		String send="str_update,"+value;
-		this.sender.execute("strUpdate", new Object[] { send }, destination);
+		this.sender.execute("strUpdate", new Object[] { value }, destination);
 	}
 
 	public void setMasterNode(Node Winner) {
@@ -553,26 +521,14 @@ public class Node {
 	}
 
 	public void advert() {
-		for (int i = 0; i < nodes.size(); i++) {
-			String myIP = this.OwnIp;
-			String myPort = String.valueOf(this.OwnPort);
-			String myID = String.valueOf(this.ID);
-			String send="MASTER,"+myIP+","+myPort+","+myID;
-			String oldIP = Global.node.nodes.get(i).OwnIp;
-			int oldPort = Global.node.nodes.get(i).OwnPort;
-			this.sender.execute("master", new Object[] { send }, oldIP, oldPort);
-			System.out.println("sent message: "+send);
+		for (Node node : this.nodes) {
+			this.sender.execute("master", new Object[] { this.OwnIp, this.OwnPort, this.ID }, node.OwnIp, node.OwnPort);
 		}
 	}
 
 	public void signOff() {
-		for (int i = 0; i < nodes.size(); i++) {
-			String myID = String.valueOf(this.ID);
-			String send="signOff,"+myID;
-			String oldIP = Global.node.nodes.get(i).OwnIp;
-			int oldPort = Global.node.nodes.get(i).OwnPort;
-			this.sender.execute("signOff", new Object[] { send }, oldIP, oldPort);
-			System.out.println("sent message: "+send);
+		for (Node node : this.nodes) {
+			this.sender.execute("signOff", new Object[] { this.ID }, node.OwnIp, node.OwnPort);
 		}
 	}
 
@@ -584,9 +540,8 @@ public class Node {
 			return;
 		}
 		
-		String send = "time_advance,"+logicalTime;
 		for (Node node : nodes) {
-			this.sender.execute("timeAdvance", new Object[] { send }, node);
+			this.sender.execute("timeAdvance", new Object[] { logicalTime }, node);
 		}
 	}
 

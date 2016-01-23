@@ -3,21 +3,14 @@ public class election implements Runnable {
 	@Override
 	public void run() {
 		if(Global.node.nodes.size()>0) {//send to higher IDs
-			String myIP = Global.node.OwnIp;
-			String myPort = String.valueOf(Global.node.OwnPort);
-			String myID = String.valueOf(Global.node.ID);
-			String send="ELECTION,"+myIP+","+myPort+","+myID;
 			boolean higher = true;
-			for (int i = 0; i < Global.node.nodes.size(); i++) {
-				int oldID = Global.node.nodes.get(i).ID;
-				if(oldID>Global.node.ID) {
+			for (Node node : Global.node.nodes) {
+				if (node.ID > Global.node.ID) {
 					higher = false;
-					String oldIP = Global.node.nodes.get(i).OwnIp;
-					int oldPort = Global.node.nodes.get(i).OwnPort;
-					Global.node.sender.execute("election", new Object[] { send }, oldIP, oldPort);
-					System.out.println("sent message: "+send);
+					Global.node.sender.execute("election", new Object[] { Global.node.OwnIp, Global.node.OwnPort, Global.node.ID }, node.OwnIp, node.OwnPort);
 				}
 			}
+			
 			if(higher==false) {//not higher...wait for response
 				long timeEnd = System.currentTimeMillis() + (5 * 1000);
 				while (System.currentTimeMillis() < timeEnd) {
