@@ -12,7 +12,7 @@ public class Reading implements Runnable {
 				String s = bufferRead.readLine();
 				StringTokenizer st=new StringTokenizer(s, " ");
 				s=st.nextToken();
-				if(s.equals("join")){
+				if(s.toUpperCase().equals("JOIN")){
 					if (st.countTokens() != 2) {
 						System.out.println("Usage: join <IP address> <port>");
 						continue;
@@ -22,7 +22,7 @@ public class Reading implements Runnable {
 					int myPort = Global.node.OwnPort;
 					Global.node.join(IP, port, myPort);
 				} 
-				else if (s.equals("start")) {
+				else if (s.toUpperCase().equals("START")) {
 					if (st.countTokens() != 1) {
 						System.out.println("Usage: start <algorithm (CME or RA)>");
 						continue;
@@ -37,10 +37,10 @@ public class Reading implements Runnable {
 						System.out.println("Usage: start <algorithm (CME or RA)>");
 					}
 				}
-				else if (s.equals("ELECTION")) {
+				else if (s.toUpperCase().equals("ELECTION")) {
 					Global.node.election();
 				}	
-				else if(s.equals("sign")) {
+				else if(s.toUpperCase().equals("SIGN")) {
 					Global.node.signOff();
 					System.exit(0);
 				}
