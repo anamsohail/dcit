@@ -150,13 +150,13 @@ public class Incomming implements Runnable {
 		Global.node.sendWordString(ip, port);
 	}
 	
-	public void strRequestOk(String msg) {
+	public void strRequestOk(String msg, int timeStamp) {
 		StringTokenizer token=new StringTokenizer(msg,",");
 		String function= token.nextToken();
 		if (function.equals("str_request_ok")) {
 			String ip = token.nextToken();
 			int port = Integer.valueOf(token.nextToken());
-			Global.node.receiveWordStringOK(ip, port);
+			Global.node.receiveWordStringOK(ip, port, timeStamp);
 		}
 	}
 	

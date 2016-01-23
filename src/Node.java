@@ -28,6 +28,8 @@ public class Node {
 	private DistributedReadWrite distReadWrite = new DistributedReadWrite();
 	public boolean awaitingFinalString;
 	private boolean hasString;
+	private int logicalTime;
+	private Thread timerRA;
 
 	/**
 	 * Initializes New Node
@@ -154,13 +156,34 @@ public class Node {
 		this.timer = new Thread(new Timer(this));
 		
 		if (this.isMasterNode()) {
-			this.timer.start();
+			if (this.algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+				this.timer.start();
+			}
 		} else {
 			this.nextRequestTime = this.distReadWrite.getRandomWaitingTime();
 			System.out.println("Waiting for " + this.nextRequestTime + " seconds");
 			
 			if (this.algorithm == Algorithm.RICART_AGRAWALA) {
-				this.requestAllForWordString(this.nextRequestTime);
+				this.logicalTime = this.nextRequestTime;
+				this.timerRA = new Thread(new TimerRicartAgrawala(this, this.nextRequestTime));
+				this.timerRA.start();
+				this.timer = new Thread(new Runnable() {
+
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(20 * 1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						Node.this.awaitingFinalString = true;
+						Node.this.requestFinalString();
+					}
+					
+				});
+				
+				this.timer.start();
 			}
 		}
 	}
@@ -170,9 +193,16 @@ public class Node {
 	 * 
 	 * @param timeStamp
 	 */
-	private void requestAllForWordString(int timeStamp) {
+	public void requestAllForWordString() {
+
+		if (this.awaitingFinalString) {
+			return;
+		}
+		
+		int timeStamp = this.logicalTime;
 		for (Node node : this.nodes) {
 			this.requestWordString(node, timeStamp);
+			this.logicalTime++;
 		}
 	}
 	
@@ -199,7 +229,7 @@ public class Node {
 			
 			System.out.println("REQUEST from " + node + " at " + timeStamp);
 			if (this.isMasterNode()) {
-				this.sendWordStringOK(node);
+				this.sendWordStringOK(node, timeStamp);
 			} else {
 				if (this.hasString) {
 					System.out.println("I have the string. Queue Request from " + node);
@@ -210,10 +240,12 @@ public class Node {
 						System.out.println("I have higher priority over " + node + ". Queueing.");
 						this.requestQueueRA.add(request);
 					} else {
-						this.sendWordStringOK(node);
+						this.sendWordStringOK(node, timeStamp);
 					}
 				}
 			}
+			
+			this.logicalTime = Math.max(this.logicalTime, timeStamp) + 1;
 		}
 	}
 	
@@ -223,10 +255,11 @@ public class Node {
 	 * @param node
 	 * @param timeStamp
 	 */
-	private void sendWordStringOK(Node node) {
-		System.out.println("OK to " + node);
+	private void sendWordStringOK(Node node, int timeStamp) {
+		System.out.println("OK to " + node + " for " + timeStamp);
 		String send = String.format("str_request_ok,%s,%s", this.OwnIp, this.OwnPort);
-		this.sender.execute("strRequestOk", new Object[] { send }, node.OwnIp, node.OwnPort);
+		this.sender.execute("strRequestOk", new Object[] { send, this.logicalTime}, node.OwnIp, node.OwnPort);
+		this.logicalTime++;
 	}
 	
 	/**
@@ -236,7 +269,8 @@ public class Node {
 	 * @param port
 	 * @param timeStamp
 	 */
-	public void receiveWordStringOK(String ip, int port) {
+	public void receiveWordStringOK(String ip, int port, int timeStamp) {
+		this.logicalTime++;
 		Node node = this.findNode(ip, port);
 		if (node == null) {
 			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
@@ -254,6 +288,8 @@ public class Node {
 		if (this.requestQueue.size() == this.nodes.size()) {
 			this.hasString = true;
 			System.out.println("/// Entering Critical Section \\\\\\");
+			
+			this.getWordStringFromMaster();
 		}
 	}
 	
@@ -328,30 +364,37 @@ public class Node {
 				int seconds = this.distReadWrite.getRandomWaitingTime();
 				System.out.println("Waiting for " + seconds + " seconds");
 				this.nextRequestTime += seconds;
+				this.logicalTime += seconds;
 				
 				if (this.algorithm == Algorithm.RICART_AGRAWALA) {
 					
 					// Give up ownership of the word string.
 					this.hasString = false;
 					
-					if (this.nextRequestTime < 20) {
-						// Make the next request.
-						this.checkRequestQueue();		
-						System.out.println("REQUEST " + this.nextRequestTime);				
-						this.requestAllForWordString(this.nextRequestTime);
-					} else {
-						System.out.println("Done");
+					// Make the next request.
+					System.out.println("\\\\\\ Exiting Critical Section ///");
+					while (!this.requestQueueRA.isEmpty()) {
+						Request request = this.requestQueueRA.poll();
+						this.sendWordStringOK(request.node, request.timeStamp);
 					}
+					
+					System.out.println("REQUEST " + this.logicalTime);
+					this.timerRA = new Thread(new TimerRicartAgrawala(this, seconds));
+					this.timerRA.start();
 				}
 			}
 		}
 	}
 	
 	private boolean hasPriority(Request request) {
-		return ((this.nextRequestTime < request.timeStamp) || (this.nextRequestTime == request.timeStamp && this.ID < request.node.ID));
+		return ((this.logicalTime < request.timeStamp) || (this.logicalTime == request.timeStamp && this.ID < request.node.ID));
 	}
 
 	public void requestFinalString(){
+		if (this.isMasterNode()) {
+			return;
+		}
+		
 		System.out.println("Requesting final string");
 		String send = "str_request_final,"+this.OwnIp+","+this.OwnPort;
 		this.sender.execute("strRequestFinal", new Object[] { send }, this.masterNode.OwnIp, this.masterNode.OwnPort);
@@ -577,18 +620,6 @@ public class Node {
 				}
 			} else {
 				System.out.println("Serviced node is not null: " + this.servicedNode);
-			}
-		} else {
-			Request request = this.requestQueueRA.peek();
-			if (request == null) {
-				System.out.println("\\\\\\ Exiting Critical Section ///");
-			} else {
-				if (!this.hasPriority(request)) {
-					this.requestQueueRA.poll();
-					System.out.println("\\\\\\ Exiting Critical Section ///");
-					System.out.println("OK to " + request.node);
-					this.sendWordStringOK(request.node);
-				}
 			}
 		}
 	}
