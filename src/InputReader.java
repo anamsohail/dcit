@@ -49,14 +49,22 @@ public class InputReader implements Runnable {
 				else if (s.toUpperCase().equals("ELECTION")) {
 					new Thread(new Election(this.node)).start();
 				}	
-				else if(s.toUpperCase().equals("SIGN")) {
+				else if(s.toUpperCase().equals("SIGNOFF")) {
 					for (Node node : this.node.nodes) {
 						XmlRpcSender.execute("nodeSignOff", new Object[] { this.node.id }, node.ip, node.port);
 					}
 					System.exit(0);
+				} else if (s.toUpperCase().equals("HELP")) {
+					System.out.println("--- List of Commands ---");
+					System.out.println("join - join a network");
+					System.out.println("elect - elect a master node");
+					System.out.println("start - start the distributed read-write operations");
+					System.out.println("signoff - sign off from the network and exit");
+					
 				}
 				else {
 					System.out.println("Unknown command: " + s);
+					System.out.println("Type 'help' for a list of commands");
 				}
 			}
 		}
