@@ -220,7 +220,7 @@ public class Node {
 				Node node = new Node(matcher.group(1), port);
 				Incoming.NODE = node;
 				new Thread(new Incoming()).start();
-				new Thread(new Reading(node)).start();
+				new Thread(new InputReader(node)).start();
 				System.out.println(node);
 			}
 		} catch (UnknownHostException e) {

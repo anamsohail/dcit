@@ -2,12 +2,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.StringTokenizer;
 
-
-public class Reading implements Runnable {
+/**
+ * Class responsible for reading the command-line input.
+ */
+public class InputReader implements Runnable {
 	
 	private Node node;
 
-	public Reading(Node node) {
+	public InputReader(Node node) {
 		this.node = node;
 	}
 	
