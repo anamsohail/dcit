@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 
 public class Node {
 	public String ip = "";
-	public int port = -1;
-	public int id = new Random().nextInt(10000);
+	public int port;
+	public int id;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
 	public Sender sender = new Sender();
@@ -18,30 +18,45 @@ public class Node {
 	private static String USAGE = "Usage: Node.java <port>";
 	
 	public Node(String ip, int port) {
-		this.ip = ip;
-		this.port = port;
+		this(ip, port, new Random().nextInt(10000));
 	}
 	
 	public Node() {
 		// Do nothing
 	}
 	
+	public Node(String ip, int port, int id) {
+		this.ip = ip;
+		this.port = port;
+		this.id = id;
+	}
+	
 	public void acceptJoinRequest(String ip, int port, int id) {
 		this.isJoined = true;
-		if(!this.checkInList(ip, port)) {
+		if(this.checkInList(ip, port)) {
+			System.out.println("Node already in network!");
+		} else {
 			int newID = this.checkID(id);
-			if(id==newID) {
+			if (id == newID) {
 				System.out.println("ID unique...joining node!");
-			}
-			else {
+			} else {
 				System.out.println("ID wasn't unique. Sending new ID to new node!");
-				this.sendIdToNewNode(ip, port, newID);
+				this.sender.execute("idUpdate", new Object[] { id }, ip, port);
 			}
 			System.out.println("joined: "+ip+","+port);
-			this.sendToAll(ip,port,newID);
-		}
-		else {
-			System.out.println("Node already in network!");
+			
+			if (nodes.size() > 0) {
+				System.out.println("Sending node information to all nodes.");
+				for (Node node : this.nodes) {
+					this.sender.execute("nodeJoined", new Object[] { ip, port, newID }, node.ip, node.port);
+					this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, port);
+				}
+			}
+			
+			System.out.println("Sending my info to new node...");
+			this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, port);
+			this.nodes.add(new Node(ip, port, id));
+			this.printNodeList();
 		}
 	}
 
@@ -57,33 +72,6 @@ public class Node {
 			this.sender.execute("joinRequest", new Object[] { this.ip, this.port, this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
-	}
-
-	public void sendIdToNewNode(String ip, int port, int ID) {
-		this.sender.execute("idUpdate", new Object[] { ID }, ip, port);
-	}
-
-	public void sendToAll(String ip, int port, int newID) {
-		if(nodes.size()>0) {
-			System.out.println("sending new node to all other nodes!");
-			for (Node node : this.nodes) {
-				this.sender.execute("nodeJoined", new Object[] { ip, port, newID }, node.ip, node.port);
-			}
-		}
-		this.sendListToNewNode(ip,port);
-		System.out.println("adding new node to List");
-		addNodeToList(ip, port, newID);
-	}
-
-	public void sendListToNewNode(String ip, int port) {
-		if(nodes.size()>0) {
-			System.out.println("sending list to new node!");
-			for (Node node : this.nodes) {
-				this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, port);
-			}
-		}
-		System.out.println("Sending my info to new node...");
-		this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, port);
 	}
 
 	public void sendOK(String ip, int port) {
@@ -117,33 +105,13 @@ public class Node {
 	}
 
 	/**
-	 * Stores a new node's information in a list
-	 * of all nodes in the network.
-	 * 
-	 * @param ip
-	 * @param port
-	 */
-	public void addNodeToList(String ip, int port, int ID) {
-		//add new node to the list
-		Node newNode = new Node();
-		newNode.ip = ip;
-		newNode.port = port;
-		newNode.id = ID;
-		nodes.add(newNode);
-		System.out.println("new node added. printing list...");
-		for (Node node : this.nodes) {
-			System.out.println(this.nodes.indexOf(node) + 1 + ": " + node);
-		}
-	}
-
-	/**
 	 * Checks whether a node contains the given network information.
 	 * 
 	 * @param ip
 	 * @param port
 	 * @return true if the node is in the network, otherwise false.
 	 */
-	public boolean checkInList(String ip, int port) {
+	private boolean checkInList(String ip, int port) {
 		if(this.ip.equals(ip) & this.port == port)
 			return true;
 		
@@ -157,7 +125,7 @@ public class Node {
 		return false;
 	}
 
-	public int checkID(int ID) {
+	private int checkID(int ID) {
 		if(ID==this.id) {
 			System.out.println("ID is the same as my ID...changing ID...");
 			ID = (int) (Math.random() * (10000 - 0));
@@ -224,6 +192,13 @@ public class Node {
 	public boolean equals(Node node) {
 		return this.ip.equals(node.ip) && this.port == node.port;
 	}
+	
+	public void printNodeList() {
+		System.out.println("Connected nodes:");
+		for (Node node : this.nodes) {
+			System.out.println(this.nodes.indexOf(node) + 1 + ": " + node);
+		}
+	}
 
 	//MAIN
 	//Usage: join <IP address> <port>
@@ -251,6 +226,6 @@ public class Node {
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
-		}	
+		}
 	}
 }

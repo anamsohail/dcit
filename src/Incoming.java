@@ -16,9 +16,10 @@ public class Incoming implements Runnable {
 		System.out.println(NODE);
 	}
 	
-	public void nodeJoined(String IP, int PORT, int sID) {
-		System.out.println("adding new node to List");
-		NODE.addNodeToList(IP, PORT, sID);
+	public void nodeJoined(String ip, int port, int id) {
+		System.out.println("New node joined.");
+		NODE.nodes.add(new Node(ip, port, id));
+		NODE.printNodeList();
 	}
 	
 	public void masterNodeAnnouncement(String masterIp, int masterPort, int masterID) {
