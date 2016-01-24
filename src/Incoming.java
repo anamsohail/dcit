@@ -5,7 +5,6 @@ import org.apache.xmlrpc.webserver.WebServer;
 
 public class Incoming implements Runnable {
 	public static Node NODE;
-	private Thread timeAdvanceGrant;
 	
 	public void join(String ip, int port, String senderIP, String senderPORT, int sID) {
 		System.out.println(ip + " " + port + " " + senderIP + " " + senderPORT + " " + sID);
@@ -77,28 +76,27 @@ public class Incoming implements Runnable {
 	}
 	
 	public void strRequest(String ip, int port, int timeStamp) {
-		NODE.receiveWordStringRequest(ip, port, timeStamp);
+		NODE.distReadWrite.receiveWordStringRequest(ip, port, timeStamp);
 	}
 	
 	public void strRequestMaster(String ip, int port) {
-		NODE.sendWordString(ip, port);
+		NODE.distReadWrite.sendWordString(ip, port);
 	}
 	
 	public void strRequestOk(String ip, int port, int timeStamp) {
-		NODE.receiveWordStringOK(ip, port, timeStamp);
+		((RicartAgrawala)NODE.distReadWrite).receiveWordStringOK(ip, port, timeStamp);
 	}
 	
 	public void timeAdvance(int time) {
-		this.timeAdvanceGrant = new Thread(new TimeAdvanceGrant(NODE, time));
-		this.timeAdvanceGrant.start();
+		NODE.distReadWrite.receiveTimeAdvanceGrant(time);
 	}
 	
 	public void strRequestFinal(String ip, int port) {
-		NODE.sendFinalString(ip, port);
+		NODE.distReadWrite.sendFinalString(ip, port);
 	}
 	
 	public void strUpdate(String value) {
-		NODE.receiveWordString(value);
+		NODE.distReadWrite.receiveWordString(value);
 	}
 	
 	@Override
