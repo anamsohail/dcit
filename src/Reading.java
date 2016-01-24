@@ -45,10 +45,12 @@ public class Reading implements Runnable {
 					}
 				}
 				else if (s.toUpperCase().equals("ELECTION")) {
-					this.node.election();
+					new Thread(new Election(this.node)).start();
 				}	
 				else if(s.toUpperCase().equals("SIGN")) {
-					this.node.signOff();
+					for (Node node : this.node.nodes) {
+						this.node.sender.execute("signOff", new Object[] { this.node.id }, node.ip, node.port);
+					}
 					System.exit(0);
 				}
 				else {

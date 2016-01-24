@@ -31,7 +31,7 @@ public class Incoming implements Runnable {
 	public void newID(int ID) {
 		System.out.println("changing my ID to: "+ID);
 		NODE.id = ID;
-		NODE.Display();
+		System.out.println(NODE);
 	}
 	
 	public void newNode(String IP, int PORT, int sID) {
@@ -57,7 +57,7 @@ public class Incoming implements Runnable {
 		if(id < NODE.id) {
 			NODE.sendOK(ip, port);
 			System.out.println("My ID is higher so I'll start my own election!");
-			NODE.election();
+			new Thread(new Election(NODE)).start();
 		}
 	}
 	

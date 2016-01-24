@@ -33,18 +33,24 @@ public class Election implements Runnable {
 				else {
 					System.out.println("No response. I'm the Winner!");
 					this.node.setMasterNode(this.node);
-					this.node.advert();
+					this.advert();
 				}
 			}
 			else{//higher...send message to network declaring yourself winner
 				System.out.println("Highest ID. I'm the Winner!");
 				this.node.setMasterNode(this.node);
-				this.node.advert();
+				this.advert();
 			}
 		}
 		else {
 			System.out.println("No nodes connected. Setting self to master node");
 			this.node.setMasterNode(this.node);
 		}		
+	}
+	
+	private void advert() {
+		for (Node node : this.node.nodes) {
+			this.node.sender.execute("master", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
+		}
 	}
 }

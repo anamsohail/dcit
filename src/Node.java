@@ -381,22 +381,10 @@ public class Node {
 		newNode.id = ID;
 		nodes.add(newNode);
 		System.out.println("new node added. printing list...");
-		printList();
-	}
-
-	/**
-	 * Prints a list of all other nodes connected to the network.
-	 */
-	public void printList() {
-		for (int i = 0; i < nodes.size(); i++) {
-			System.out.println(i+1+" IP: "+nodes.get(i).ip+" Port: "+nodes.get(i).port+" ID: "+nodes.get(i).id);
+		for (Node node : this.nodes) {
+			System.out.println(this.nodes.indexOf(node) + 1 + ": " + node);
 		}
 	}
-
-	public void Display(){
-		String message="My IP: "+this.ip+" Port: "+this.port+" ID: "+id;
-		System.out.println(message);
-	}	
 
 	/**
 	 * Checks whether a node contains the given network information.
@@ -440,7 +428,7 @@ public class Node {
 	}
 	
 	public String toString() {
-		return "[" + String.valueOf(this.id) + "]";
+		return String.format("IP: %s Port: %d ID: %d", this.ip, this.port, this.id);
 	}
 
 	/**
@@ -502,26 +490,9 @@ public class Node {
 			return;
 		}
 		System.out.println("====Master node elected====");
-		Winner.Display();
+		System.out.println(Winner);
 		System.out.println("===========================");
 		this.masterNode = Winner;
-	}
-
-	public void election(){
-		Election elect = new Election(this);
-		new Thread(elect).start();
-	}
-
-	public void advert() {
-		for (Node node : this.nodes) {
-			this.sender.execute("master", new Object[] { this.ip, this.port, this.id }, node.ip, node.port);
-		}
-	}
-
-	public void signOff() {
-		for (Node node : this.nodes) {
-			this.sender.execute("signOff", new Object[] { this.id }, node.ip, node.port);
-		}
 	}
 
 	/**
@@ -593,7 +564,7 @@ public class Node {
 				Incoming.NODE = node;
 				new Thread(new Incoming()).start();
 				new Thread(new Reading(node)).start();
-				node.Display();
+				System.out.println(node);
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
