@@ -83,16 +83,15 @@ public class CentralizedMutualExclusion extends DistributedReadWrite {
 	 */
 	@Override
 	public void receiveWordStringRequest(int requesterId, int timeStamp) {
-		try {
-			Node node = this.findNodeById(requesterId);
+		Node node = this.findNodeById(requesterId);
+		if (node == null) {
+			new Exception("Unknown address: " + requesterId).printStackTrace();
+		}
 
-			if (this.node.isMasterNode()) {
-				System.out.println("Receive request from " + node);
-				this.requestQueue.add(node);
-				this.checkRequestQueue();
-			}
-		} catch (NodeNotFoundException e) {
-			e.printStackTrace();
+		if (this.node.isMasterNode()) {
+			System.out.println("Receive request from " + node);
+			this.requestQueue.add(node);
+			this.checkRequestQueue();
 		}
 	}
 

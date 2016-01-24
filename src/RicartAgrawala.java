@@ -124,26 +124,26 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 * @param timeStamp
 	 */
 	public void receiveWordStringOK(int senderId, int timeStamp) {
-		try {
-			this.logicalTime++;
-			Node node = this.findNodeById(senderId);
-			if (this.responseQueue.contains(node)) {
-				new Exception("Duplicate node " + senderId).printStackTrace();
-			}
+		this.logicalTime++;
+		Node node = this.findNodeById(senderId);
+		if (node == null) {
+			new Exception("Unknown address: " + senderId).printStackTrace();
+		}
 
-			System.out.println(String.format("receive OK t: %d id: %d", timeStamp, node.id));
+		if (this.responseQueue.contains(node)) {
+			new Exception("Duplicate node " + senderId).printStackTrace();
+		}
 
-			this.responseQueue.add(node);
+		System.out.println(String.format("receive OK t: %d id: %d", timeStamp, node.id));
 
-			// We have access to the word string if all nodes respond with "OK"
-			if (this.responseQueue.size() == this.nodes.size()) {
-				this.hasString = true;
-				System.out.println("--- Entering Critical Section ---");
+		this.responseQueue.add(node);
 
-				this.getWordStringFromMaster();
-			}
-		} catch (NodeNotFoundException e) {
-			e.printStackTrace();
+		// We have access to the word string if all nodes respond with "OK"
+		if (this.responseQueue.size() == this.nodes.size()) {
+			this.hasString = true;
+			System.out.println("--- Entering Critical Section ---");
+
+			this.getWordStringFromMaster();
 		}
 	}
 
@@ -205,31 +205,30 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 */
 	@Override
 	public void receiveWordStringRequest(int requesterId, int timeStamp) {
-		try {
-			node = this.findNodeById(requesterId);
-			System.out.println(String.format("receive REQUEST t: %d id: %d", timeStamp, node.id));
-			if (this.node.isMasterNode()) {
-				this.sendWordStringOK(node, timeStamp);
+		Node node = this.findNodeById(requesterId);
+		if (node == null) {
+			new Exception("Unknown id: " + requesterId).printStackTrace();
+		}
+
+		System.out.println(String.format("receive REQUEST t: %d id: %d", timeStamp, node.id));
+		if (this.node.isMasterNode()) {
+			this.sendWordStringOK(node, timeStamp);
+		} else {
+			if (this.hasString) {
+				System.out.println("I have the string. Queue Request from " + requesterId);
+				this.requestQueue.add(new Request(node, timeStamp));
 			} else {
-				if (this.hasString) {
-					System.out.println("I have the string. Queue Request from " + requesterId);
-					this.requestQueue.add(new Request(node, timeStamp));
+				Request request = new Request(node, timeStamp);
+				if (this.hasPriority(request)) {
+					System.out.println("I have higher priority over " + requesterId + ". Queueing.");
+					this.requestQueue.add(request);
 				} else {
-					Request request = new Request(node, timeStamp);
-					if (this.hasPriority(request)) {
-						System.out.println("I have higher priority over " + requesterId + ". Queueing.");
-						this.requestQueue.add(request);
-					} else {
-						this.sendWordStringOK(node, timeStamp);
-					}
+					this.sendWordStringOK(node, timeStamp);
 				}
 			}
-
-			this.logicalTime = Math.max(this.logicalTime, timeStamp) + 1;
-
-		} catch (NodeNotFoundException e) {
-			e.printStackTrace();
 		}
+
+		this.logicalTime = Math.max(this.logicalTime, timeStamp) + 1;
 	}
 
 	@Override
