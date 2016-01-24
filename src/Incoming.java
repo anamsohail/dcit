@@ -53,15 +53,16 @@ public class Incoming implements Runnable {
 	/***
 	 * Announces the master node.
 	 * 
-	 * @param masterIp
-	 * @param masterPort
 	 * @param masterID
 	 */
-	public void masterNodeAnnouncement(String masterIp, int masterPort, int masterID) {
-		Node master = new Node();
-		master.ip = masterIp;
-		master.port = masterPort;
-		master.id = masterID;
+	public void masterNodeAnnouncement(int masterID) {
+		Node master = null;
+		for (Node node : NODE.nodes) {
+			if (node.id == masterID) {
+				master = node;
+			}
+		}
+		
 		NODE.setMasterNode(master);
 	}
 	
