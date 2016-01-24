@@ -8,7 +8,7 @@ public class DistributedReadWrite {
 	private final String WORDS[] = {"apple", "banana", "carrot", "date", "eggplant", "fig", "guava"};
 	private Random rand = new Random();
 
-	private List<String> appended = new ArrayList<String>();	
+	private List<IndexedWord> appended = new ArrayList<IndexedWord>();	
 	
 	/**
 	 * Appends a random word to the word string.
@@ -16,9 +16,10 @@ public class DistributedReadWrite {
 	 * @return the updated word string.
 	 */
 	public String appendRandomWord(String wordString) {
+		String[] tokens = wordString.split(" ");
 		String newWord = WORDS[new Random().nextInt(WORDS.length)];
-		wordString += (wordString.length() != 0 ? " " : "") + newWord;
-		this.appended.add(newWord);
+		wordString += (tokens.length == 0 ? "" : " ") + newWord;
+		this.appended.add(new IndexedWord(tokens.length, newWord));
 		return wordString;
 	}
 	
@@ -32,17 +33,9 @@ public class DistributedReadWrite {
 		String[] finalTokens = wordString.split(" ");
 		this.printStringList("words appended by this node:", this.appended);
 		
-		List<String> missing = new ArrayList<String>();
-		for (String word : this.appended) {
-			boolean found = false;
-			for (int i = 0; i < finalTokens.length; i++) {
-				if (word.equals(finalTokens[i])) {
-					found = true;
-					break;
-				}
-			}
-			
-			if (!found) {
+		List<IndexedWord> missing = new ArrayList<IndexedWord>();
+		for (IndexedWord word : this.appended) {
+			if (!finalTokens[word.index].equals(word.value)) {
 				missing.add(word);
 			}
 		}
@@ -69,10 +62,10 @@ public class DistributedReadWrite {
 	 * @param caption
 	 * @param list
 	 */
-	public void printStringList(String caption, List<String> list) {
+	private void printStringList(String caption, List<IndexedWord> list) {
 		System.out.print(caption);
-		for (String word : list) {
-			System.out.print(" " + word);
+		for (IndexedWord word : list) {
+			System.out.print(" " + word.value);
 		}
 		System.out.println();
 	}
@@ -82,5 +75,18 @@ public class DistributedReadWrite {
 	 */
 	public void reset() {
 		this.appended.clear();
+	}
+	
+	/**
+	 * Class for keeping track of appended words.
+	 */
+	private class IndexedWord {
+		public int index;
+		public String value;
+		
+		public IndexedWord(int index, String value) {
+			this.index = index;
+			this.value = value;
+		}
 	}
 }
