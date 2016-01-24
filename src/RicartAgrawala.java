@@ -37,6 +37,16 @@ public class RicartAgrawala extends DistributedReadWrite {
 
 	}
 
+	public class Request {
+		public Node node;
+		public int timeStamp;
+		
+		public Request(Node node, int timeStamp) {
+			this.node = node;
+			this.timeStamp = timeStamp;
+		}
+	}
+
 	protected static final String ALGORITHM = "Ricart-Agrawala";
 	private boolean hasString;
 	private boolean awaitingFinalString;
