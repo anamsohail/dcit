@@ -6,24 +6,8 @@ import org.apache.xmlrpc.webserver.WebServer;
 public class Incoming implements Runnable {
 	public static Node NODE;
 	
-	public void joinRequest(String senderIP, int senderPORT, int sID) {
-		if(!NODE.checkInList(senderIP, senderPORT)) {
-			int newID = NODE.checkID(sID);
-			if(sID==newID) {
-				System.out.println("ID unique...joining node!");
-			}
-			else {
-				System.out.println("ID wasn't unique. Sending new ID to new node!");
-				NODE.sendIdToNewNode(senderIP, senderPORT, newID);
-			}
-			System.out.println("joined: "+senderIP+","+senderPORT);
-			NODE.sendToAll(senderIP,senderPORT,newID);
-		}
-		else {
-			System.out.println("Node already in network!");
-		}
-		
-		NODE.isJoined = true;
+	public void joinRequest(String ip, int port, int id) {
+		NODE.acceptJoinRequest(ip, port, id);
 	}
 	
 	public void idUpdate(int ID) {

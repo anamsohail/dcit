@@ -25,6 +25,25 @@ public class Node {
 	public Node() {
 		// Do nothing
 	}
+	
+	public void acceptJoinRequest(String ip, int port, int id) {
+		this.isJoined = true;
+		if(!this.checkInList(ip, port)) {
+			int newID = this.checkID(id);
+			if(id==newID) {
+				System.out.println("ID unique...joining node!");
+			}
+			else {
+				System.out.println("ID wasn't unique. Sending new ID to new node!");
+				this.sendIdToNewNode(ip, port, newID);
+			}
+			System.out.println("joined: "+ip+","+port);
+			this.sendToAll(ip,port,newID);
+		}
+		else {
+			System.out.println("Node already in network!");
+		}
+	}
 
 	/**
 	 * Joins a network by connecting to a node that
