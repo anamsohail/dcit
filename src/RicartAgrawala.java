@@ -155,15 +155,15 @@ public class RicartAgrawala extends DistributedReadWrite {
 				this.sendWordString(wordString, this.masterNode);
 				System.out.println("new string: " + wordString);
 
+				// Give up ownership of the word string.
+				System.out.println("--- Exiting Critical Section ---");
+				this.hasString = false;
+
 				int seconds = this.getRandomWaitingTime();
 				System.out.println("Waiting for " + seconds + " seconds");
 				this.logicalTime += seconds;
 
-				// Give up ownership of the word string.
-				this.hasString = false;
-
 				// Make the next request.
-				System.out.println("--- Exiting Critical Section ---");
 				while (!this.requestQueue.isEmpty()) {
 					Request request = this.requestQueue.poll();
 					this.sendWordStringOK(request.node, request.timeStamp);
@@ -243,7 +243,7 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 * @param timeStamp
 	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
-		System.out.println("OK to " + node.id + " for " + timeStamp);
+		System.out.println(String.format("send OK t: %d id: %d", timeStamp, node.id));
 		this.sender.execute("strRequestOk", new Object[] { this.node.id, this.logicalTime }, node);
 		this.logicalTime++;
 	}
