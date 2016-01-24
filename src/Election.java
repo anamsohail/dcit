@@ -23,18 +23,17 @@ public class Election implements Runnable {
 				while (System.currentTimeMillis() < timeEnd) {
 					try {
 						Thread.sleep(1*1000);
+						if(this.node.responded) {
+							System.out.println("I lost the election!");
+							return;
+						}
 					} catch (InterruptedException e) {e.printStackTrace();}
 					System.out.println("sleeping...");
 				}
-				if(this.node.responded==true) {
-					System.out.println("I lost the election!");
-					//this.responded=false;
-				}
-				else {
-					System.out.println("No response. I'm the Winner!");
-					this.node.setMasterNode(this.node);
-					this.advert();
-				}
+				
+				System.out.println("No response. I'm the Winner!");
+				this.node.setMasterNode(this.node);
+				this.advert();
 			}
 			else{//higher...send message to network declaring yourself winner
 				System.out.println("Highest ID. I'm the Winner!");
