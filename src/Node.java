@@ -35,36 +35,36 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			this.sender.execute("joinRequest", new Object[] { ip, port, this.ip, String.valueOf(this.port), this.id }, ip, port);
+			this.sender.execute("joinRequest", new Object[] { this.ip, this.port, this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
 	}
 
-	public void sendIDtoNewNode(String ip, String port, int ID) {
-		this.sender.execute("idUpdate", new Object[] { ID }, ip, Integer.parseInt(port));
+	public void sendIdToNewNode(String ip, int port, int ID) {
+		this.sender.execute("idUpdate", new Object[] { ID }, ip, port);
 	}
 
-	public void sendToAll(String ip, String port, int newID) {
+	public void sendToAll(String ip, int port, int newID) {
 		if(nodes.size()>0) {
 			System.out.println("sending new node to all other nodes!");
 			for (Node node : this.nodes) {
-				this.sender.execute("nodeJoined", new Object[] { ip, Integer.parseInt(port), newID }, node.ip, node.port);
+				this.sender.execute("nodeJoined", new Object[] { ip, port, newID }, node.ip, node.port);
 			}
 		}
-		sendListToNewNode(ip,port);
+		this.sendListToNewNode(ip,port);
 		System.out.println("adding new node to List");
-		addNodeToList(ip, Integer.parseInt(port), newID);
+		addNodeToList(ip, port, newID);
 	}
 
-	public void sendListToNewNode(String ip, String port) {
+	public void sendListToNewNode(String ip, int port) {
 		if(nodes.size()>0) {
 			System.out.println("sending list to new node!");
 			for (Node node : this.nodes) {
-				this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, Integer.parseInt(port));
+				this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, port);
 			}
 		}
 		System.out.println("Sending my info to new node...");
-		this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, Integer.parseInt(port));
+		this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, port);
 	}
 
 	public void sendOK(String ip, int port) {
@@ -124,15 +124,15 @@ public class Node {
 	 * @param port
 	 * @return true if the node is in the network, otherwise false.
 	 */
-	public boolean checkInList(String ip, String port) {
-		if(this.ip.equals(ip) & this.port == Integer.parseInt(port))
+	public boolean checkInList(String ip, int port) {
+		if(this.ip.equals(ip) & this.port == port)
 			return true;
 		
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
 			
 			for (Node node : this.nodes) {
-				return node.ip.equals(ip) && node.port == Integer.parseInt(port);
+				return node.ip.equals(ip) && node.port == port;
 			}
 		}
 		return false;

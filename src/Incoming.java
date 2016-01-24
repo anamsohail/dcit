@@ -6,8 +6,7 @@ import org.apache.xmlrpc.webserver.WebServer;
 public class Incoming implements Runnable {
 	public static Node NODE;
 	
-	public void joinRequest(String ip, int port, String senderIP, String senderPORT, int sID) {
-		System.out.println(ip + " " + port + " " + senderIP + " " + senderPORT + " " + sID);
+	public void joinRequest(String senderIP, int senderPORT, int sID) {
 		if(!NODE.checkInList(senderIP, senderPORT)) {
 			int newID = NODE.checkID(sID);
 			if(sID==newID) {
@@ -15,7 +14,7 @@ public class Incoming implements Runnable {
 			}
 			else {
 				System.out.println("ID wasn't unique. Sending new ID to new node!");
-				NODE.sendIDtoNewNode(senderIP, senderPORT, newID);
+				NODE.sendIdToNewNode(senderIP, senderPORT, newID);
 			}
 			System.out.println("joined: "+senderIP+","+senderPORT);
 			NODE.sendToAll(senderIP,senderPORT,newID);
