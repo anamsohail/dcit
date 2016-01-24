@@ -9,7 +9,8 @@ public class Election implements Runnable {
 	
 	@Override
 	public void run() {
-		if(this.node.nodes.size()>0) {//send to higher IDs
+		if(this.node.nodes.size() > 0) {
+			//send to higher IDs
 			boolean higher = true;
 			for (Node node : this.node.nodes) {
 				if (node.id > this.node.id) {
@@ -18,25 +19,25 @@ public class Election implements Runnable {
 				}
 			}
 			
-			if(higher==false) {//not higher...wait for response
-				long timeEnd = System.currentTimeMillis() + (5 * 1000);
-				while (System.currentTimeMillis() < timeEnd) {
+			if (higher) {
+				//higher...send message to network declaring yourself winner
+				System.out.println("Highest ID. I'm the Winner!");
+				this.node.setMasterNode(this.node);
+				this.advert();
+			} else {
+				//not higher...wait for response
+				System.out.println("waiting for response...");
+				for (int i = 0; i < 5; i++) {
 					try {
-						Thread.sleep(1*1000);
+						Thread.sleep(1000);
 						if(this.node.responded) {
 							System.out.println("I lost the election!");
 							return;
 						}
 					} catch (InterruptedException e) {e.printStackTrace();}
-					System.out.println("sleeping...");
 				}
 				
 				System.out.println("No response. I'm the Winner!");
-				this.node.setMasterNode(this.node);
-				this.advert();
-			}
-			else{//higher...send message to network declaring yourself winner
-				System.out.println("Highest ID. I'm the Winner!");
 				this.node.setMasterNode(this.node);
 				this.advert();
 			}
