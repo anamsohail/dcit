@@ -8,7 +8,8 @@ public class Incoming implements Runnable {
 	private Thread timeAdvanceGrant;
 	
 	public void join(String ip, int port, String senderIP, String senderPORT, int sID) {
-		if(!NODE.checkInList(senderIP, String.valueOf(senderPORT))) {
+		System.out.println(ip + " " + port + " " + senderIP + " " + senderPORT + " " + sID);
+		if(!NODE.checkInList(senderIP, senderPORT)) {
 			int newID = NODE.checkID(sID);
 			if(sID==newID) {
 				System.out.println("ID unique...joining node!");
@@ -29,7 +30,7 @@ public class Incoming implements Runnable {
 	
 	public void newID(int ID) {
 		System.out.println("changing my ID to: "+ID);
-		NODE.ID = ID;
+		NODE.id = ID;
 		NODE.Display();
 	}
 	
@@ -40,9 +41,9 @@ public class Incoming implements Runnable {
 	
 	public void master (String masterIp, int masterPort, int masterID) {
 		Node master = new Node();
-		master.OwnIp = masterIp;
-		master.OwnPort = masterPort;
-		master.ID = masterID;
+		master.ip = masterIp;
+		master.port = masterPort;
+		master.id = masterID;
 		NODE.setMasterNode(master);
 	}
 	
@@ -53,7 +54,7 @@ public class Incoming implements Runnable {
 	
 	public void election(String ip, int port, int id) {
 		System.out.println("msg received: ELECTION from "+ip+","+port+","+id);
-		if(id < NODE.ID) {
+		if(id < NODE.id) {
 			NODE.sendOK(ip, port);
 			System.out.println("My ID is higher so I'll start my own election!");
 			NODE.election();
@@ -103,7 +104,7 @@ public class Incoming implements Runnable {
 	@Override
 	public void run() {
 		try{
-			WebServer webServer = new WebServer(NODE.OwnPort);
+			WebServer webServer = new WebServer(NODE.port);
 			XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
 			PropertyHandlerMapping phm = new PropertyHandlerMapping();
 			phm.setVoidMethodEnabled(true);

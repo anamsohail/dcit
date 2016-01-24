@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Node {
-	public String OwnIp;
-	public int OwnPort;
-	public int ID;
+	public String ip = "";
+	public int port = -1;
+	public int id = new Random().nextInt(10000);
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
 	private Thread timer;
@@ -30,18 +31,14 @@ public class Node {
 	private boolean hasString;
 	private int logicalTime;
 	private Thread timerRA;
-
-	/**
-	 * Initializes New Node
-	 * @param ip
-	 * @param port
-	 */
-	public void create(String ip,int port){
-		try{
-			OwnIp = ip;
-			OwnPort = port;
-			ID = (int) (Math.random() * (10000 - 0));
-		}catch(Exception e){e.printStackTrace();}
+	
+	public Node(String ip, int port) {
+		this.ip = ip;
+		this.port = port;
+	}
+	
+	public Node() {
+		// Do nothing
 	}
 
 	/**
@@ -53,7 +50,7 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			this.sender.execute("join", new Object[] { ip, port, this.OwnIp, String.valueOf(this.OwnPort), this.ID }, ip, port);
+			this.sender.execute("join", new Object[] { ip, port, this.ip, String.valueOf(this.port), this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
 	}
@@ -66,7 +63,7 @@ public class Node {
 		if(nodes.size()>0) {
 			System.out.println("sending new node to all other nodes!");
 			for (Node node : this.nodes) {
-				this.sender.execute("newNode", new Object[] { ip, Integer.parseInt(port), newID }, node.OwnIp, node.OwnPort);
+				this.sender.execute("newNode", new Object[] { ip, Integer.parseInt(port), newID }, node.ip, node.port);
 			}
 		}
 		sendListToNewNode(ip,port);
@@ -78,15 +75,15 @@ public class Node {
 		if(nodes.size()>0) {
 			System.out.println("sending list to new node!");
 			for (Node node : this.nodes) {
-				this.sender.execute("newNode", new Object[] { node.OwnIp, node.OwnPort, node.ID }, ip, Integer.parseInt(port));
+				this.sender.execute("newNode", new Object[] { node.ip, node.port, node.id }, ip, Integer.parseInt(port));
 			}
 		}
 		System.out.println("Sending my info to new node...");
-		this.sender.execute("newNode", new Object[] { this.OwnIp, this.OwnPort, this.ID }, ip, Integer.parseInt(port));
+		this.sender.execute("newNode", new Object[] { this.ip, this.port, this.id }, ip, Integer.parseInt(port));
 	}
 
 	public void sendOK(String ip, int port) {
-		this.sender.execute("ok", new Object[] { this.OwnIp, this.OwnPort, this.ID }, ip, port);
+		this.sender.execute("ok", new Object[] { this.ip, this.port, this.id }, ip, port);
 	}
 
 	/**
@@ -104,7 +101,7 @@ public class Node {
 		}
 
 		for (Node node : nodes) {
-			this.sender.execute("start", new Object[] { algorithm.ordinal() }, node.OwnIp, node.OwnPort);
+			this.sender.execute("start", new Object[] { algorithm.ordinal() }, node.ip, node.port);
 		}
 		
 		this.start(algorithm);
@@ -229,7 +226,7 @@ public class Node {
 	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
 		System.out.println("OK to " + node + " for " + timeStamp);
-		this.sender.execute("strRequestOk", new Object[] { this.OwnIp, this.OwnPort, this.logicalTime}, node.OwnIp, node.OwnPort);
+		this.sender.execute("strRequestOk", new Object[] { this.ip, this.port, this.logicalTime}, node.ip, node.port);
 		this.logicalTime++;
 	}
 	
@@ -273,7 +270,7 @@ public class Node {
 			this.requestQueue.clear();
 		}
 		
-		this.sender.execute("strRequestMaster", new Object[] { this.OwnIp, this.OwnPort}, this.masterNode);
+		this.sender.execute("strRequestMaster", new Object[] { this.ip, this.port}, this.masterNode);
 	}
 
 	/**
@@ -286,7 +283,7 @@ public class Node {
 			System.out.println("REQUEST to " + node + " for " + timeStamp);
 		}
 		
-		this.sender.execute("strRequest", new Object[] { this.OwnIp, this.OwnPort, timeStamp }, node.OwnIp, node.OwnPort);
+		this.sender.execute("strRequest", new Object[] { this.ip, this.port, timeStamp }, node.ip, node.port);
 	}
 
 	public void sendFinalString(String ip, int port) {
@@ -357,7 +354,7 @@ public class Node {
 	}
 	
 	private boolean hasPriority(Request request) {
-		return ((this.logicalTime < request.timeStamp) || (this.logicalTime == request.timeStamp && this.ID < request.node.ID));
+		return ((this.logicalTime < request.timeStamp) || (this.logicalTime == request.timeStamp && this.id < request.node.id));
 	}
 
 	public void requestFinalString(){
@@ -366,7 +363,7 @@ public class Node {
 		}
 		
 		System.out.println("Requesting final string");
-		this.sender.execute("strRequestFinal", new Object[] { this.OwnIp, this.OwnPort }, this.masterNode.OwnIp, this.masterNode.OwnPort);
+		this.sender.execute("strRequestFinal", new Object[] { this.ip, this.port }, this.masterNode.ip, this.masterNode.port);
 	}
 
 	/**
@@ -379,9 +376,9 @@ public class Node {
 	public void addNodeToList(String ip, int port, int ID) {
 		//add new node to the list
 		Node newNode = new Node();
-		newNode.OwnIp = ip;
-		newNode.OwnPort = port;
-		newNode.ID = ID;
+		newNode.ip = ip;
+		newNode.port = port;
+		newNode.id = ID;
 		nodes.add(newNode);
 		System.out.println("new node added. printing list...");
 		printList();
@@ -392,17 +389,13 @@ public class Node {
 	 */
 	public void printList() {
 		for (int i = 0; i < nodes.size(); i++) {
-			System.out.println(i+1+" IP: "+nodes.get(i).OwnIp+" Port: "+nodes.get(i).OwnPort+" ID: "+nodes.get(i).ID);
+			System.out.println(i+1+" IP: "+nodes.get(i).ip+" Port: "+nodes.get(i).port+" ID: "+nodes.get(i).id);
 		}
 	}
 
 	public void Display(){
-		try{
-			String IP=OwnIp;
-			String port=String.valueOf(OwnPort);
-			String message="My IP: "+IP+" Port: "+port+" ID: "+ID;
-			System.out.println(message);
-		}catch(Exception e){e.printStackTrace();}
+		String message="My IP: "+this.ip+" Port: "+this.port+" ID: "+id;
+		System.out.println(message);
 	}	
 
 	/**
@@ -413,22 +406,21 @@ public class Node {
 	 * @return true if the node is in the network, otherwise false.
 	 */
 	public boolean checkInList(String ip, String port) {
-		String myIP = OwnIp;
-		String myPort = String.valueOf(OwnPort);
-		if(myIP.equals(ip) & myPort.equals(port)) return true;
+		if(this.ip.equals(ip) & this.port == Integer.parseInt(port))
+			return true;
+		
 		if(nodes.size()>0) {
 			System.out.println("checking if node already exists...");
-			for (int i = 0; i < nodes.size(); i++) {
-				String oldIP = nodes.get(i).OwnIp;
-				String oldPort = String.valueOf(nodes.get(i).OwnPort);
-				if(oldIP.equals(ip) & oldPort.equals(port)) return true;
+			
+			for (Node node : this.nodes) {
+				return node.ip.equals(ip) && node.port == Integer.parseInt(port);
 			}
 		}
 		return false;
 	}
 
 	public int checkID(int ID) {
-		if(ID==this.ID) {
+		if(ID==this.id) {
 			System.out.println("ID is the same as my ID...changing ID...");
 			ID = (int) (Math.random() * (10000 - 0));
 			ID = checkID(ID);
@@ -436,7 +428,7 @@ public class Node {
 		if(nodes.size()>0) {
 			System.out.println("checking if ID is unique...");
 			for (int i = 0; i < nodes.size(); i++) {
-				int oldID = nodes.get(i).ID;
+				int oldID = nodes.get(i).id;
 				if(ID==oldID) {
 					System.out.println("ID isn't unique...changing ID...");
 					ID = (int) (Math.random() * (10000 - 0));
@@ -448,7 +440,7 @@ public class Node {
 	}
 	
 	public String toString() {
-		return "[" + String.valueOf(this.ID) + "]";
+		return "[" + String.valueOf(this.id) + "]";
 	}
 
 	/**
@@ -460,16 +452,16 @@ public class Node {
 	 */
 	public Node findNode(String ip, int port) {
 		for (Node node: this.nodes) {
-			if (node.OwnIp.equals(ip) && node.OwnPort == port) {
+			if (node.ip.equals(ip) && node.port == port) {
 				// Node found.
 				return node;
 			}
 		}
 		// Check if requested node is this instance.
-		if (this.OwnIp.equals(ip) && port == this.OwnPort) {
+		if (this.ip.equals(ip) && port == this.port) {
 			return this;
 		}
-		System.out.println(this.OwnIp);
+		System.out.println(this.ip);
 		// Node not found.
 		return null;
 	}
@@ -480,7 +472,7 @@ public class Node {
 			return -1;
 		}
 		for (int i = 0; i < nodes.size(); i++) {
-			if (nodes.get(i).ID == ID) {
+			if (nodes.get(i).id == ID) {
 				System.out.println("Node found!");
 				return i;
 			}
@@ -522,13 +514,13 @@ public class Node {
 
 	public void advert() {
 		for (Node node : this.nodes) {
-			this.sender.execute("master", new Object[] { this.OwnIp, this.OwnPort, this.ID }, node.OwnIp, node.OwnPort);
+			this.sender.execute("master", new Object[] { this.ip, this.port, this.id }, node.ip, node.port);
 		}
 	}
 
 	public void signOff() {
 		for (Node node : this.nodes) {
-			this.sender.execute("signOff", new Object[] { this.ID }, node.OwnIp, node.OwnPort);
+			this.sender.execute("signOff", new Object[] { this.id }, node.ip, node.port);
 		}
 	}
 
@@ -555,7 +547,7 @@ public class Node {
 	}
 
 	public boolean equals(Node node) {
-		return this.OwnIp.equals(node.OwnIp) && this.OwnPort == node.OwnPort;
+		return this.ip.equals(node.ip) && this.port == node.port;
 	}
 
 	private void checkRequestQueue() {
@@ -597,16 +589,11 @@ public class Node {
 			// Get local IP address from format: <hostname>/<IP address>
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
-				Node node = new Node();
-				node.create(matcher.group(1), port);
+				Node node = new Node(matcher.group(1), port);
 				Incoming.NODE = node;
 				new Thread(new Incoming()).start();
 				new Thread(new Reading(node)).start();
 				node.Display();
-			}
-			
-			while (true) {
-				// Do nothing.
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();

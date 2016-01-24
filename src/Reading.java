@@ -26,7 +26,7 @@ public class Reading implements Runnable {
 					}
 					String IP = st.nextToken();
 					int port = Integer.parseInt(new String(st.nextToken()));
-					int myPort = this.node.OwnPort;
+					int myPort = this.node.port;
 					this.node.join(IP, port, myPort);
 				} 
 				else if (s.toUpperCase().equals("START")) {

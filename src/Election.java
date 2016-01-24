@@ -12,9 +12,9 @@ public class Election implements Runnable {
 		if(this.node.nodes.size()>0) {//send to higher IDs
 			boolean higher = true;
 			for (Node node : this.node.nodes) {
-				if (node.ID > this.node.ID) {
+				if (node.id > this.node.id) {
 					higher = false;
-					this.node.sender.execute("election", new Object[] { this.node.OwnIp, this.node.OwnPort, this.node.ID }, node.OwnIp, node.OwnPort);
+					this.node.sender.execute("election", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
 				}
 			}
 			

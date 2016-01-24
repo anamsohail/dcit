@@ -21,7 +21,7 @@ public class Sender {
 	 * @param node
 	 */
 	public void execute(String method, Object[] params, Node node) {
-		this.execute(method, params, node.OwnIp, node.OwnPort);
+		this.execute(method, params, node.ip, node.port);
 	}
 
 	/**
