@@ -89,14 +89,14 @@ public abstract class DistributedReadWrite {
 		}
 	}
 
-	protected Node findNodeById(int id) {
+	protected Node findNodeById(int id) throws NodeNotFoundException {
 		for (Node node : this.nodes) {
 			if (node.id == id) {
 				return node;
 			}
 		}
 		
-		return null;
+		throw new NodeNotFoundException(id);
 	}
 
 	protected void requestFinalString() {
@@ -109,9 +109,9 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void sendFinalString(int requesterId) {
-		System.out.println("Request for final string");
-		Node node = this.findNodeById(requesterId);
-		if (node != null) {
+		try {
+			System.out.println("Request for final string");
+			Node node = this.findNodeById(requesterId);
 			this.doneNodes.add(node);
 			System.out.println(this.doneNodes.size() + " of " + this.nodes.size());
 			if (this.doneNodes.size() == this.nodes.size()) {
@@ -119,14 +119,17 @@ public abstract class DistributedReadWrite {
 					this.sendWordString(this.wordString, n);
 				}
 			}
-		} else {
-			Exception e = new Exception("Node not found: " + requesterId);
+		} catch (NodeNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 
 	protected void sendWordString(int requesterId) {
-		this.sendWordString(this.wordString, this.findNodeById(requesterId));
+		try {
+			this.sendWordString(this.wordString, this.findNodeById(requesterId));
+		} catch (NodeNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 	protected void sendWordString(String value, Node destination) {
