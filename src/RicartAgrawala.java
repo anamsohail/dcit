@@ -110,29 +110,28 @@ public class RicartAgrawala extends DistributedReadWrite {
 	/**
 	 * Receive "OK" message from a node.
 	 * 
-	 * @param ip
-	 * @param port
+	 * @param senderId
 	 * @param timeStamp
 	 */
-	public void receiveWordStringOK(String ip, int port, int timeStamp) {
+	public void receiveWordStringOK(int senderId, int timeStamp) {
 		this.logicalTime++;
-		Node node = this.findNode(ip, port);
+		Node node = this.findNodeById(senderId);
 		if (node == null) {
-			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
+			new Exception("Unknown address: " + senderId).printStackTrace();
 		}
 
 		if (this.responseQueue.contains(node)) {
-			new Exception("Duplicate node " + node).printStackTrace();
+			new Exception("Duplicate node " + senderId).printStackTrace();
 		}
 
-		System.out.println("OK from " + node);
+		System.out.println(String.format("receive OK t: %d id: %d", timeStamp, node.id));
 
 		this.responseQueue.add(node);
 
 		// We have access to the word string if all nodes respond with "OK"
 		if (this.responseQueue.size() == this.nodes.size()) {
 			this.hasString = true;
-			System.out.println("/// Entering Critical Section \\\\\\");
+			System.out.println("--- Entering Critical Section ---");
 
 			this.getWordStringFromMaster();
 		}
@@ -164,13 +163,12 @@ public class RicartAgrawala extends DistributedReadWrite {
 				this.hasString = false;
 
 				// Make the next request.
-				System.out.println("\\\\\\ Exiting Critical Section ///");
+				System.out.println("--- Exiting Critical Section ---");
 				while (!this.requestQueue.isEmpty()) {
 					Request request = this.requestQueue.poll();
 					this.sendWordStringOK(request.node, request.timeStamp);
 				}
 
-				System.out.println("REQUEST " + this.logicalTime);
 				this.sleeper = new Thread(new Sleeper(seconds));
 				this.sleeper.start();
 			}
@@ -179,7 +177,7 @@ public class RicartAgrawala extends DistributedReadWrite {
 
 	@Override
 	public void requestWordString(Node node, int timeStamp) {
-		System.out.println("REQUEST to " + node + " for " + timeStamp);
+		System.out.println(String.format("send REQUEST t: %d id: %d", timeStamp, node.id));
 		super.requestWordString(node, timeStamp);
 	}
 
@@ -196,23 +194,23 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 * @param timeStamp
 	 */
 	@Override
-	public void receiveWordStringRequest(String ip, int port, int timeStamp) {
-		Node node = this.findNode(ip, port);
+	public void receiveWordStringRequest(int requesterId, int timeStamp) {
+		Node node = this.findNodeById(requesterId);
 		if (node == null) {
-			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
+			new Exception("Unknown id: " + requesterId).printStackTrace();
 		}
 
-		System.out.println("REQUEST from " + node + " at " + timeStamp);
+		System.out.println(String.format("receive REQUEST t: %d id: %d", timeStamp, node.id));
 		if (this.node.isMasterNode()) {
 			this.sendWordStringOK(node, timeStamp);
 		} else {
 			if (this.hasString) {
-				System.out.println("I have the string. Queue Request from " + node);
+				System.out.println("I have the string. Queue Request from " + requesterId);
 				this.requestQueue.add(new Request(node, timeStamp));
 			} else {
 				Request request = new Request(node, timeStamp);
 				if (this.hasPriority(request)) {
-					System.out.println("I have higher priority over " + node + ". Queueing.");
+					System.out.println("I have higher priority over " + requesterId + ". Queueing.");
 					this.requestQueue.add(request);
 				} else {
 					this.sendWordStringOK(node, timeStamp);
@@ -245,9 +243,8 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 * @param timeStamp
 	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
-		System.out.println("OK to " + node + " for " + timeStamp);
-		this.sender.execute("strRequestOk", new Object[] { this.node.ip, this.node.port, this.logicalTime }, node.ip,
-				node.port);
+		System.out.println("OK to " + node.id + " for " + timeStamp);
+		this.sender.execute("strRequestOk", new Object[] { this.node.id, this.logicalTime }, node);
 		this.logicalTime++;
 	}
 

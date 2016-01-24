@@ -89,26 +89,13 @@ public abstract class DistributedReadWrite {
 		}
 	}
 
-	/**
-	 * Find the locally stored node from an IP address and port.
-	 * 
-	 * @param ip
-	 * @param port
-	 * @return The node if found, otherwise null.
-	 */
-	protected Node findNode(String ip, int port) {
+	protected Node findNodeById(int id) {
 		for (Node node : this.nodes) {
-			if (node.ip.equals(ip) && node.port == port) {
+			if (node.id == id) {
 				return node;
 			}
 		}
-
-		// Check if requested node is this instance.
-		if (this.node.ip.equals(ip) && port == this.node.port) {
-			return this.node;
-		}
-
-		// Node not found.
+		
 		return null;
 	}
 
@@ -118,12 +105,12 @@ public abstract class DistributedReadWrite {
 		}
 
 		System.out.println("Requesting final string");
-		this.sender.execute("strRequestFinal", new Object[] { this.node.ip, this.node.port }, this.masterNode);
+		this.sender.execute("strRequestFinal", new Object[] { this.node.id }, this.masterNode);
 	}
 
-	protected void sendFinalString(String ip, int port) {
+	protected void sendFinalString(int requesterId) {
 		System.out.println("Request for final string");
-		Node node = this.findNode(ip, port);
+		Node node = this.findNodeById(requesterId);
 		if (node != null) {
 			this.doneNodes.add(node);
 			System.out.println(this.doneNodes.size() + " of " + this.nodes.size());
@@ -133,13 +120,13 @@ public abstract class DistributedReadWrite {
 				}
 			}
 		} else {
-			Exception e = new Exception("Node not found: " + ip + ":" + port);
+			Exception e = new Exception("Node not found: " + requesterId);
 			e.printStackTrace();
 		}
 	}
 
-	protected void sendWordString(String ip, int port) {
-		this.sendWordString(this.wordString, this.findNode(ip, port));
+	protected void sendWordString(int requesterId) {
+		this.sendWordString(this.wordString, this.findNodeById(requesterId));
 	}
 
 	protected void sendWordString(String value, Node destination) {
@@ -156,7 +143,7 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void getWordStringFromMaster() {
-		this.sender.execute("strRequestMaster", new Object[] { this.node.ip, this.node.port }, this.masterNode);
+		this.sender.execute("strRequestMaster", new Object[] { this.node.id }, this.masterNode);
 	}
 
 	protected DistributedReadWrite(Node node) {
@@ -172,7 +159,7 @@ public abstract class DistributedReadWrite {
 	 * @return the master node's word string.
 	 */
 	protected void requestWordString(Node node, int timeStamp) {
-		this.sender.execute("strRequest", new Object[] { this.node.ip, this.node.port, timeStamp }, node.ip, node.port);
+		this.sender.execute("strRequest", new Object[] { this.node.id, timeStamp }, node);
 	}
 
 	/**
@@ -197,7 +184,7 @@ public abstract class DistributedReadWrite {
 	 * @param port
 	 * @param timeStamp
 	 */
-	abstract void receiveWordStringRequest(String ip, int port, int timeStamp);
+	abstract void receiveWordStringRequest(int requesterId, int timeStamp);
 
 	abstract void receiveWordString(String wordString);
 

@@ -82,10 +82,10 @@ public class CentralizedMutualExclusion extends DistributedReadWrite {
 	 * @param timeStamp
 	 */
 	@Override
-	public void receiveWordStringRequest(String ip, int port, int timeStamp) {
-		Node node = this.findNode(ip, port);
+	public void receiveWordStringRequest(int requesterId, int timeStamp) {
+		Node node = this.findNodeById(requesterId);
 		if (node == null) {
-			new Exception("Unknown address: " + ip + ":" + port).printStackTrace();
+			new Exception("Unknown address: " + requesterId).printStackTrace();
 		}
 
 		if (this.node.isMasterNode()) {

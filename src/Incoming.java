@@ -75,24 +75,24 @@ public class Incoming implements Runnable {
 		NODE.start(Algorithm.values()[Integer.valueOf(algorithmOrdinal)]);
 	}
 	
-	public void strRequest(String ip, int port, int timeStamp) {
-		NODE.distReadWrite.receiveWordStringRequest(ip, port, timeStamp);
+	public void strRequest(int requesterId, int timeStamp) {
+		NODE.distReadWrite.receiveWordStringRequest(requesterId, timeStamp);
 	}
 	
-	public void strRequestMaster(String ip, int port) {
-		NODE.distReadWrite.sendWordString(ip, port);
+	public void strRequestMaster(int requesterId) {
+		NODE.distReadWrite.sendWordString(requesterId);
 	}
 	
-	public void strRequestOk(String ip, int port, int timeStamp) {
-		((RicartAgrawala)NODE.distReadWrite).receiveWordStringOK(ip, port, timeStamp);
+	public void strRequestOk(int senderId, int timeStamp) {
+		((RicartAgrawala)NODE.distReadWrite).receiveWordStringOK(senderId, timeStamp);
 	}
 	
 	public void timeAdvance(int time) {
 		NODE.distReadWrite.receiveTimeAdvanceGrant(time);
 	}
 	
-	public void strRequestFinal(String ip, int port) {
-		NODE.distReadWrite.sendFinalString(ip, port);
+	public void strRequestFinal(int requesterId) {
+		NODE.distReadWrite.sendFinalString(requesterId);
 	}
 	
 	public void strUpdate(String value) {
