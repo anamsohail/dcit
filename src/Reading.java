@@ -49,7 +49,7 @@ public class Reading implements Runnable {
 				}	
 				else if(s.toUpperCase().equals("SIGN")) {
 					for (Node node : this.node.nodes) {
-						this.node.sender.execute("signOff", new Object[] { this.node.id }, node.ip, node.port);
+						this.node.sender.execute("nodeSignOff", new Object[] { this.node.id }, node.ip, node.port);
 					}
 					System.exit(0);
 				}

@@ -35,20 +35,20 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			this.sender.execute("join", new Object[] { ip, port, this.ip, String.valueOf(this.port), this.id }, ip, port);
+			this.sender.execute("joinRequest", new Object[] { ip, port, this.ip, String.valueOf(this.port), this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
 	}
 
 	public void sendIDtoNewNode(String ip, String port, int ID) {
-		this.sender.execute("newID", new Object[] { ID }, ip, Integer.parseInt(port));
+		this.sender.execute("idUpdate", new Object[] { ID }, ip, Integer.parseInt(port));
 	}
 
 	public void sendToAll(String ip, String port, int newID) {
 		if(nodes.size()>0) {
 			System.out.println("sending new node to all other nodes!");
 			for (Node node : this.nodes) {
-				this.sender.execute("newNode", new Object[] { ip, Integer.parseInt(port), newID }, node.ip, node.port);
+				this.sender.execute("nodeJoined", new Object[] { ip, Integer.parseInt(port), newID }, node.ip, node.port);
 			}
 		}
 		sendListToNewNode(ip,port);
@@ -60,11 +60,11 @@ public class Node {
 		if(nodes.size()>0) {
 			System.out.println("sending list to new node!");
 			for (Node node : this.nodes) {
-				this.sender.execute("newNode", new Object[] { node.ip, node.port, node.id }, ip, Integer.parseInt(port));
+				this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, Integer.parseInt(port));
 			}
 		}
 		System.out.println("Sending my info to new node...");
-		this.sender.execute("newNode", new Object[] { this.ip, this.port, this.id }, ip, Integer.parseInt(port));
+		this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, Integer.parseInt(port));
 	}
 
 	public void sendOK(String ip, int port) {
@@ -86,7 +86,7 @@ public class Node {
 		}
 
 		for (Node node : nodes) {
-			this.sender.execute("start", new Object[] { algorithm.ordinal() }, node.ip, node.port);
+			this.sender.execute("startDistributedReadWrite", new Object[] { algorithm.ordinal() }, node.ip, node.port);
 		}
 		
 		this.start(algorithm);

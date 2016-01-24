@@ -50,7 +50,7 @@ public class Election implements Runnable {
 	
 	private void advert() {
 		for (Node node : this.node.nodes) {
-			this.node.sender.execute("master", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
+			this.node.sender.execute("masterNodeAnnouncement", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
 		}
 	}
 }

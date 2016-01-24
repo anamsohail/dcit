@@ -6,7 +6,7 @@ import org.apache.xmlrpc.webserver.WebServer;
 public class Incoming implements Runnable {
 	public static Node NODE;
 	
-	public void join(String ip, int port, String senderIP, String senderPORT, int sID) {
+	public void joinRequest(String ip, int port, String senderIP, String senderPORT, int sID) {
 		System.out.println(ip + " " + port + " " + senderIP + " " + senderPORT + " " + sID);
 		if(!NODE.checkInList(senderIP, senderPORT)) {
 			int newID = NODE.checkID(sID);
@@ -27,18 +27,18 @@ public class Incoming implements Runnable {
 		NODE.isJoined = true;
 	}
 	
-	public void newID(int ID) {
+	public void idUpdate(int ID) {
 		System.out.println("changing my ID to: "+ID);
 		NODE.id = ID;
 		System.out.println(NODE);
 	}
 	
-	public void newNode(String IP, int PORT, int sID) {
+	public void nodeJoined(String IP, int PORT, int sID) {
 		System.out.println("adding new node to List");
 		NODE.addNodeToList(IP, PORT, sID);
 	}
 	
-	public void master (String masterIp, int masterPort, int masterID) {
+	public void masterNodeAnnouncement(String masterIp, int masterPort, int masterID) {
 		Node master = new Node();
 		master.ip = masterIp;
 		master.port = masterPort;
@@ -60,7 +60,7 @@ public class Incoming implements Runnable {
 		}
 	}
 	
-	public void signOff(int senderID) {				
+	public void nodeSignOff(int senderID) {				
 		int index = NODE.findNodeIndex(senderID);
 		if(index==-1) {
 			System.out.println("Node not in list. So no sign off!");
@@ -71,7 +71,7 @@ public class Incoming implements Runnable {
 		}
 	}
 	
-	public void start(int algorithmOrdinal) {
+	public void startDistributedReadWrite(int algorithmOrdinal) {
 		NODE.start(Algorithm.values()[Integer.valueOf(algorithmOrdinal)]);
 	}
 	
