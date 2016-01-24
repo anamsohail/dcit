@@ -218,8 +218,8 @@ public class Node {
 			Matcher matcher = Pattern.compile(".*/(.*)").matcher(InetAddress.getLocalHost().toString());
 			if (matcher.find()) {
 				Node node = new Node(matcher.group(1), port);
-				Incoming.NODE = node;
-				new Thread(new Incoming()).start();
+				XmlRpcReceiver.NODE = node;
+				new Thread(new XmlRpcReceiver()).start();
 				new Thread(new InputReader(node)).start();
 				System.out.println(node);
 			}

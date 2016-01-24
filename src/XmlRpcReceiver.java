@@ -4,10 +4,9 @@ import org.apache.xmlrpc.server.XmlRpcServerConfigImpl;
 import org.apache.xmlrpc.webserver.WebServer;
 
 /**
- * This class is responsible for receiving XML-RPC messages.
- *
+ * Class responsible for receiving XML-RPC messages.
  */
-public class Incoming implements Runnable {
+public class XmlRpcReceiver implements Runnable {
 	public static Node NODE;
 	
 	/**
@@ -184,7 +183,7 @@ public class Incoming implements Runnable {
 			XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
 			PropertyHandlerMapping phm = new PropertyHandlerMapping();
 			phm.setVoidMethodEnabled(true);
-			phm.addHandler("receiver", Incoming.class);
+			phm.addHandler("receiver", XmlRpcReceiver.class);
 			xmlRpcServer.setHandlerMapping(phm);
 			XmlRpcServerConfigImpl serverConfig = (XmlRpcServerConfigImpl)
 					xmlRpcServer.getConfig();
