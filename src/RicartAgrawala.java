@@ -254,7 +254,7 @@ public class RicartAgrawala extends DistributedReadWrite {
 	 */
 	private void sendWordStringOK(Node node, int timeStamp) {
 		System.out.println(String.format("send OK t: %d id: %d", timeStamp, node.id));
-		this.sender.execute("wordStringResponse", new Object[] { this.node.id, this.logicalTime }, node);
+		XmlRpcSender.execute("wordStringResponse", new Object[] { this.node.id, this.logicalTime }, node);
 		this.logicalTime++;
 	}
 

@@ -24,7 +24,6 @@ public abstract class DistributedReadWrite {
 	protected Node node;
 	protected Node masterNode;
 	protected String wordString;
-	protected Sender sender;
 	protected boolean awaitingFinalString;
 
 	private static final int WAIT_MIN = 1;
@@ -105,7 +104,7 @@ public abstract class DistributedReadWrite {
 		}
 
 		System.out.println("Requesting final string");
-		this.sender.execute("finalWordStringRequest", new Object[] { this.node.id }, this.masterNode);
+		XmlRpcSender.execute("finalWordStringRequest", new Object[] { this.node.id }, this.masterNode);
 	}
 
 	protected void sendFinalString(int requesterId) {
@@ -130,7 +129,7 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void sendWordString(String value, Node destination) {
-		this.sender.execute("wordStringUpdate", new Object[] { value }, destination);
+		XmlRpcSender.execute("wordStringUpdate", new Object[] { value }, destination);
 	}
 
 	/**
@@ -143,14 +142,13 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void getWordStringFromMaster() {
-		this.sender.execute("wordStringRequestToMasterNode", new Object[] { this.node.id }, this.masterNode);
+		XmlRpcSender.execute("wordStringRequestToMasterNode", new Object[] { this.node.id }, this.masterNode);
 	}
 
 	protected DistributedReadWrite(Node node) {
 		this.node = node;
 		this.masterNode = node.getMasterNode();
 		this.nodes = node.nodes;
-		this.sender = this.node.sender;
 	}
 
 	/**
@@ -159,7 +157,7 @@ public abstract class DistributedReadWrite {
 	 * @return the master node's word string.
 	 */
 	protected void requestWordString(Node node, int timeStamp) {
-		this.sender.execute("wordStringRequest", new Object[] { this.node.id, timeStamp }, node);
+		XmlRpcSender.execute("wordStringRequest", new Object[] { this.node.id, timeStamp }, node);
 	}
 
 	/**

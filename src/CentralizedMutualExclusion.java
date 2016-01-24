@@ -164,7 +164,7 @@ public class CentralizedMutualExclusion extends DistributedReadWrite {
 		}
 
 		for (Node node : nodes) {
-			this.sender.execute("timeAdvance", new Object[] { logicalTime }, node);
+			XmlRpcSender.execute("timeAdvance", new Object[] { logicalTime }, node);
 		}
 	}
 }

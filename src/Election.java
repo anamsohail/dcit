@@ -15,7 +15,7 @@ public class Election implements Runnable {
 			for (Node node : this.node.nodes) {
 				if (node.id > this.node.id) {
 					higher = false;
-					this.node.sender.execute("startElection", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
+					XmlRpcSender.execute("startElection", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
 				}
 			}
 			
@@ -50,7 +50,7 @@ public class Election implements Runnable {
 	
 	private void advert() {
 		for (Node node : this.node.nodes) {
-			this.node.sender.execute("masterNodeAnnouncement", new Object[] { this.node.id }, node);
+			XmlRpcSender.execute("masterNodeAnnouncement", new Object[] { this.node.id }, node);
 		}
 	}
 }

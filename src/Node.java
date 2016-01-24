@@ -11,7 +11,6 @@ public class Node {
 	public int id;
 	public ArrayList<Node> nodes = new ArrayList<Node>();
 	public boolean responded = false;
-	public Sender sender = new Sender();
 	public boolean isJoined = false;
 	private Node masterNode;
 	public DistributedReadWrite distReadWrite;
@@ -41,20 +40,20 @@ public class Node {
 				System.out.println("ID unique...joining node!");
 			} else {
 				System.out.println("ID wasn't unique. Sending new ID to new node!");
-				this.sender.execute("idUpdate", new Object[] { id }, ip, port);
+				XmlRpcSender.execute("idUpdate", new Object[] { id }, ip, port);
 			}
 			System.out.println("joined: "+ip+","+port);
 			
 			if (nodes.size() > 0) {
 				System.out.println("Sending node information to all nodes.");
 				for (Node node : this.nodes) {
-					this.sender.execute("nodeJoined", new Object[] { ip, port, newID }, node.ip, node.port);
-					this.sender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, port);
+					XmlRpcSender.execute("nodeJoined", new Object[] { ip, port, newID }, node.ip, node.port);
+					XmlRpcSender.execute("nodeJoined", new Object[] { node.ip, node.port, node.id }, ip, port);
 				}
 			}
 			
 			System.out.println("Sending my info to new node...");
-			this.sender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, port);
+			XmlRpcSender.execute("nodeJoined", new Object[] { this.ip, this.port, this.id }, ip, port);
 			this.nodes.add(new Node(ip, port, id));
 			this.printNodeList();
 		}
@@ -69,13 +68,13 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			this.sender.execute("joinRequest", new Object[] { this.ip, this.port, this.id }, ip, port);
+			XmlRpcSender.execute("joinRequest", new Object[] { this.ip, this.port, this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
 	}
 
 	public void sendOK(String ip, int port) {
-		this.sender.execute("electionResponse", new Object[] { this.ip, this.port, this.id }, ip, port);
+		XmlRpcSender.execute("electionResponse", new Object[] { this.ip, this.port, this.id }, ip, port);
 	}
 
 	/**
@@ -93,7 +92,7 @@ public class Node {
 		}
 
 		for (Node node : nodes) {
-			this.sender.execute("startDistributedReadWrite", new Object[] { algorithm.ordinal() }, node.ip, node.port);
+			XmlRpcSender.execute("startDistributedReadWrite", new Object[] { algorithm.ordinal() }, node.ip, node.port);
 		}
 		
 		this.start(algorithm);
