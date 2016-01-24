@@ -46,12 +46,12 @@ public class Incoming implements Runnable {
 		NODE.setMasterNode(master);
 	}
 	
-	public void ok(String ip, int port, int id) {
+	public void electionResponse(String ip, int port, int id) {
 		System.out.println("msg received: OK from "+ip+","+port+","+id);
 		NODE.responded = true;
 	}
 	
-	public void election(String ip, int port, int id) {
+	public void startElection(String ip, int port, int id) {
 		System.out.println("msg received: ELECTION from "+ip+","+port+","+id);
 		if(id < NODE.id) {
 			NODE.sendOK(ip, port);
@@ -75,15 +75,15 @@ public class Incoming implements Runnable {
 		NODE.start(Algorithm.values()[Integer.valueOf(algorithmOrdinal)]);
 	}
 	
-	public void strRequest(int requesterId, int timeStamp) {
+	public void wordStringRequest(int requesterId, int timeStamp) {
 		NODE.distReadWrite.receiveWordStringRequest(requesterId, timeStamp);
 	}
 	
-	public void strRequestMaster(int requesterId) {
+	public void wordStringRequestToMasterNode(int requesterId) {
 		NODE.distReadWrite.sendWordString(requesterId);
 	}
 	
-	public void strRequestOk(int senderId, int timeStamp) {
+	public void wordStringResponse(int senderId, int timeStamp) {
 		((RicartAgrawala)NODE.distReadWrite).receiveWordStringOK(senderId, timeStamp);
 	}
 	
@@ -91,11 +91,11 @@ public class Incoming implements Runnable {
 		NODE.distReadWrite.receiveTimeAdvanceGrant(time);
 	}
 	
-	public void strRequestFinal(int requesterId) {
+	public void finalWordStringRequest(int requesterId) {
 		NODE.distReadWrite.sendFinalString(requesterId);
 	}
 	
-	public void strUpdate(String value) {
+	public void wordStringUpdate(String value) {
 		NODE.distReadWrite.receiveWordString(value);
 	}
 	

@@ -14,7 +14,7 @@ public class Election implements Runnable {
 			for (Node node : this.node.nodes) {
 				if (node.id > this.node.id) {
 					higher = false;
-					this.node.sender.execute("election", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
+					this.node.sender.execute("startElection", new Object[] { this.node.ip, this.node.port, this.node.id }, node.ip, node.port);
 				}
 			}
 			

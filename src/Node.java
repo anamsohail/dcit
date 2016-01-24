@@ -68,7 +68,7 @@ public class Node {
 	}
 
 	public void sendOK(String ip, int port) {
-		this.sender.execute("ok", new Object[] { this.ip, this.port, this.id }, ip, port);
+		this.sender.execute("electionResponse", new Object[] { this.ip, this.port, this.id }, ip, port);
 	}
 
 	/**

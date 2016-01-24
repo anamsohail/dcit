@@ -105,7 +105,7 @@ public abstract class DistributedReadWrite {
 		}
 
 		System.out.println("Requesting final string");
-		this.sender.execute("strRequestFinal", new Object[] { this.node.id }, this.masterNode);
+		this.sender.execute("finalWordStringRequest", new Object[] { this.node.id }, this.masterNode);
 	}
 
 	protected void sendFinalString(int requesterId) {
@@ -133,7 +133,7 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void sendWordString(String value, Node destination) {
-		this.sender.execute("strUpdate", new Object[] { value }, destination);
+		this.sender.execute("wordStringUpdate", new Object[] { value }, destination);
 	}
 
 	/**
@@ -146,7 +146,7 @@ public abstract class DistributedReadWrite {
 	}
 
 	protected void getWordStringFromMaster() {
-		this.sender.execute("strRequestMaster", new Object[] { this.node.id }, this.masterNode);
+		this.sender.execute("wordStringRequestToMasterNode", new Object[] { this.node.id }, this.masterNode);
 	}
 
 	protected DistributedReadWrite(Node node) {
@@ -162,7 +162,7 @@ public abstract class DistributedReadWrite {
 	 * @return the master node's word string.
 	 */
 	protected void requestWordString(Node node, int timeStamp) {
-		this.sender.execute("strRequest", new Object[] { this.node.id, timeStamp }, node);
+		this.sender.execute("wordStringRequest", new Object[] { this.node.id, timeStamp }, node);
 	}
 
 	/**
