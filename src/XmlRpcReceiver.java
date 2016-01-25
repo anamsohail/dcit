@@ -19,8 +19,8 @@ public class XmlRpcReceiver implements Runnable {
 	 * @param port
 	 * @param id
 	 */
-	public void joinRequest(String ip, int port, int id) {
-		NODE.acceptJoinRequest(ip, port, id);
+	public void joinRequest(String ip, String port, int id) {
+		NODE.acceptJoinRequest(ip, Integer.parseInt(port), id);
 	}
 	
 	/**
