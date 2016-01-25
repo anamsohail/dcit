@@ -8,10 +8,10 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 /**
  * Class responsible for sending messages across nodes.
  */
-public class Sender {
-
-	private XmlRpcClient sender = new XmlRpcClient();
-	private XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+public class XmlRpcSender {
+	
+	private static final XmlRpcClient SENDER = new XmlRpcClient();
+	private static final XmlRpcClientConfigImpl CONFIG = new XmlRpcClientConfigImpl();
 
 	/**
 	 * Tells the given node to execute a method with particular parameters.
@@ -20,8 +20,8 @@ public class Sender {
 	 * @param params
 	 * @param node
 	 */
-	public void execute(String method, Object[] params, Node node) {
-		this.execute(method, params, node.OwnIp, node.OwnPort);
+	public static void execute(String method, Object[] params, Node node) {
+		XmlRpcSender.execute(method, params, node.ip, node.port);
 	}
 
 	/**
@@ -31,18 +31,18 @@ public class Sender {
 	 * @param params
 	 * @param node
 	 */
-	public void execute(String method, Object[] params, String destIP, int destPort) {
+	public static void execute(String method, Object[] params, String destIP, int destPort) {
 		try {
-			this.config.setServerURL(new URL("http://" + destIP + ":" + destPort));
+			CONFIG.setServerURL(new URL("http://" + destIP + ":" + destPort));
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 		
-		this.config.setEnabledForExtensions(true);
-		this.sender.setConfig(config);
+		CONFIG.setEnabledForExtensions(true);
+		SENDER.setConfig(CONFIG);
 
 		try {
-			this.sender.execute(String.format("receiver.%s", method), params);
+			SENDER.execute(String.format("receiver.%s", method), params);
 		} catch (XmlRpcException e) {
 			e.printStackTrace();
 		}

@@ -2,85 +2,189 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class DistributedReadWrite {
-	private static final int WAIT_MIN = 1;
-	private static final int WAIT_MAX = 10;
-	private final String WORDS[] = {"apple", "banana", "carrot", "date", "eggplant", "fig", "guava"};
-	private Random rand = new Random();
-
-	private List<String> appended = new ArrayList<String>();	
+public abstract class DistributedReadWrite {
 	
 	/**
+	 * Class for keeping track of appended words.
+	 */
+	private class IndexedWord {
+		public int index;
+		public String value;
+
+		public IndexedWord(int index, String value) {
+
+			this.index = index;
+			this.value = value;
+		}
+	}
+	
+	protected static final String ALGORITHM = "";
+	protected List<Node> nodes = new ArrayList<Node>();
+	protected List<Node> doneNodes = new ArrayList<Node>();
+	protected Node node;
+	protected Node masterNode;
+	protected String wordString;
+	protected boolean awaitingFinalString;
+
+	private static final int WAIT_MIN = 1;
+	private static final int WAIT_MAX = 10;
+	private final String WORDS[] = { "apple", "banana", "carrot", "date", "eggplant", "fig", "guava" };
+	private Random rand = new Random();
+	private List<IndexedWord> appended = new ArrayList<IndexedWord>();
+	
+	public static DistributedReadWrite create(Node node, Algorithm algorithm) {
+		if (algorithm == Algorithm.CENTRALIZED_MUTUAL_EXCLUSION) {
+			return new CentralizedMutualExclusion(node);
+		} else {
+			return new RicartAgrawala(node);
+		}
+	}
+
+	/**
+	 * Start the distributed read-write process.
+	 */
+	public void start() {
+		this.appended.clear();
+		this.wordString = "";
+	}
+
+	/**
 	 * Appends a random word to the word string.
+	 * 
 	 * @param wordString
 	 * @return the updated word string.
 	 */
-	public String appendRandomWord(String wordString) {
+	protected String appendRandomWord(String wordString) {
+		String[] tokens = wordString.split(" ");
 		String newWord = WORDS[new Random().nextInt(WORDS.length)];
-		wordString += (wordString.length() != 0 ? " " : "") + newWord;
-		this.appended.add(newWord);
+		wordString += (tokens.length == 0 ? "" : " ") + newWord;
+		this.appended.add(new IndexedWord(tokens.length, newWord));
 		return wordString;
 	}
-	
+
 	/**
 	 * Checks the final string from the master node.
 	 */
-	public void checkFinalString(String wordString) {
+	protected void checkFinalString(String wordString) {
 		System.out.println("-------------------");
 		System.out.println("final string: " + wordString);
 		// Check that all appended words are in the final string.
 		String[] finalTokens = wordString.split(" ");
 		this.printStringList("words appended by this node:", this.appended);
-		
-		List<String> missing = new ArrayList<String>();
-		for (String word : this.appended) {
-			boolean found = false;
-			for (int i = 0; i < finalTokens.length; i++) {
-				if (word.equals(finalTokens[i])) {
-					found = true;
-					break;
-				}
-			}
-			
-			if (!found) {
+
+		List<IndexedWord> missing = new ArrayList<IndexedWord>();
+		for (IndexedWord word : this.appended) {
+			if (!finalTokens[word.index].equals(word.value)) {
 				missing.add(word);
 			}
 		}
-		
+
 		System.out.println("-------------------");
 		if (missing.size() == 0) {
 			System.out.println("All words are included in the final string.");
 		} else {
 			System.out.println("Some words are missing from the final string.");
-			this.printStringList("Words missing from final string:", missing);	
+			this.printStringList("Words missing from final string:", missing);
 		}
 	}
-	
+
+	protected Node findNodeById(int id) {
+		for (Node node : this.nodes) {
+			if (node.id == id) {
+				return node;
+			}
+		}
+		
+		return null;
+	}
+
+	protected void requestFinalString() {
+		if (this.node.isMasterNode()) {
+			return;
+		}
+
+		System.out.println("Requesting final string");
+		XmlRpcSender.execute("finalWordStringRequest", new Object[] { this.node.id }, this.masterNode);
+	}
+
+	protected void sendFinalString(int requesterId) {
+		System.out.println("Request for final string");
+		Node node = this.findNodeById(requesterId);
+		if (node != null) {
+			this.doneNodes.add(node);
+			System.out.println(this.doneNodes.size() + " of " + this.nodes.size());
+			if (this.doneNodes.size() == this.nodes.size()) {
+				for (Node n : this.nodes) {
+					this.sendWordString(this.wordString, n);
+				}
+			}
+		} else {
+			Exception e = new Exception("Node not found: " + requesterId);
+			e.printStackTrace();
+		}
+	}
+
+	protected void sendWordString(int requesterId) {
+		this.sendWordString(this.wordString, this.findNodeById(requesterId));
+	}
+
+	protected void sendWordString(String value, Node destination) {
+		XmlRpcSender.execute("wordStringUpdate", new Object[] { value }, destination);
+	}
+
 	/**
 	 * Gets a random waiting time.
+	 * 
 	 * @return the logical waiting time.
 	 */
-	public int getRandomWaitingTime() {
+	protected int getRandomWaitingTime() {
 		return this.rand.nextInt(WAIT_MAX - WAIT_MIN) + WAIT_MIN;
 	}
-	
+
+	protected void getWordStringFromMaster() {
+		XmlRpcSender.execute("wordStringRequestToMasterNode", new Object[] { this.node.id }, this.masterNode);
+	}
+
+	protected DistributedReadWrite(Node node) {
+		this.node = node;
+		this.masterNode = node.getMasterNode();
+		this.nodes = node.nodes;
+	}
+
 	/**
-	 * Prints a list of strings in the format: [caption]: [word] [word] [word]...
+	 * Requests for the master node's word string.
+	 * 
+	 * @return the master node's word string.
+	 */
+	protected void requestWordString(Node node, int timeStamp) {
+		XmlRpcSender.execute("wordStringRequest", new Object[] { this.node.id, timeStamp }, node);
+	}
+
+	/**
+	 * Prints a list of strings in the format: [caption]: [word] [word]
+	 * [word]...
+	 * 
 	 * @param caption
 	 * @param list
 	 */
-	public void printStringList(String caption, List<String> list) {
+	private void printStringList(String caption, List<IndexedWord> list) {
 		System.out.print(caption);
-		for (String word : list) {
-			System.out.print(" " + word);
+		for (IndexedWord word : list) {
+			System.out.print(" " + word.value);
 		}
 		System.out.println();
 	}
-	
+
 	/**
-	 * Resets the distributed read/write.
+	 * Received a request from a node for the word string.
+	 * 
+	 * @param ip
+	 * @param port
+	 * @param timeStamp
 	 */
-	public void reset() {
-		this.appended.clear();
-	}
+	abstract void receiveWordStringRequest(int requesterId, int timeStamp);
+
+	abstract void receiveWordString(String wordString);
+
+	abstract void receiveTimeAdvanceGrant(int time);
 }
