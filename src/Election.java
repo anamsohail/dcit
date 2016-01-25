@@ -1,4 +1,3 @@
-
 public class Election implements Runnable {
 	
 	private Node node;
