@@ -44,6 +44,11 @@ public class XmlRpcSender {
 		try {
 			SENDER.execute(String.format("receiver.%s", method), params);
 		} catch (XmlRpcException e) {
+			if (e.getMessage().contains("Unknown type: nil")) {
+				// Ignore this exception.
+				return;
+			}
+			
 			e.printStackTrace();
 		}
 	}
