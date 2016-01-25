@@ -68,7 +68,7 @@ public class Node {
 	 */
 	public void join(String ip,int port, int myPort){
 		try{
-			XmlRpcSender.execute("joinRequest", new Object[] { this.ip, this.port, this.id }, ip, port);
+			XmlRpcSender.execute("joinRequest", new Object[] { this.ip, String.valueOf(this.port), this.id }, ip, port);
 			this.isJoined = true;
 		}catch(Exception e ){e.printStackTrace();}	
 	}
@@ -144,6 +144,7 @@ public class Node {
 		return ID;
 	}
 	
+	@Override
 	public String toString() {
 		return String.format("IP: %s Port: %d ID: %d", this.ip, this.port, this.id);
 	}
